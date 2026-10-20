@@ -229,4 +229,38 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
+router.delete("/:id", autenticar, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Usuário não autenticado" });
+  }
+
+  const id = inteiroPositivo(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Transação inválida." });
+  }
+
+  try {
+    const transacaoApagar = await prisma.transaction.findFirst({
+      where: { id, userId },
+      select: { parcelamentoId: true },
+    });
+
+    if (!transacaoApagar) {
+      return res.status(404).json({ error: "Transação não encontrada." });
+    }
+
+    await prisma.transaction.deleteMany({
+      where: transacaoApagar.parcelamentoId
+        ? { parcelamentoId: transacaoApagar.parcelamentoId, userId }
+        : { id, userId },
+    });
+
+    return res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Ocorreu um erro no servidor" });
+  }
+});
+
 export default router;
