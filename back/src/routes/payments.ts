@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
-import { validarDiasCartao } from "../utils/validacao.js";
+import { inteiroPositivo, validarDiasCartao } from "../utils/validacao.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
 
@@ -174,6 +174,42 @@ router.put("/:id", autenticar, async (req, res) => {
     const conhecido = erroPrisma(err, MSG_NOME_DUPLICADO);
     if (conhecido)
       return res.status(conhecido.status).json({ error: conhecido.error });
+    console.error(err);
+    return res.status(500).json({ error: "Ocorreu um erro no servidor" });
+  }
+});
+
+router.delete("/", autenticar, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Usuário não autenticado" });
+  }
+
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500) {
+    return res
+      .status(400)
+      .json({ error: "Selecione as categorias a excluir." });
+  }
+
+  const idsValidos = [...new Set(ids.map(inteiroPositivo))];
+  if (idsValidos.some((id) => !id)) {
+    return res.status(400).json({ error: "Categoria inválida." });
+  }
+
+  try {
+    const { count } = await prisma.formaPagamento.updateMany({
+      where: {
+        userId,
+        id: { in: idsValidos as number[] },
+      },
+      data: {
+        ativo: false,
+      },
+    });
+
+    return res.json({ excluidas: count });
+  } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Ocorreu um erro no servidor" });
   }
