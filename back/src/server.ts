@@ -4,6 +4,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import paymentsRoutes from "./routes/payments.js";
 import transactionsRoutes from "./routes/transactions.js";
+import categoriesRoutes from "./routes/categories.js";
 
 const app = express();
 app.use(cors());
@@ -11,6 +12,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/payments", paymentsRoutes);
+app.use("/api/categories", categoriesRoutes);
 app.use("/api/transactions", transactionsRoutes);
 
 const PORT = 3000;
