@@ -95,11 +95,8 @@ router.delete("/:id", autenticar, async (req, res) => {
       data: { ativo: false },
     });
 
-    res.status(204).send();
+    return res.status(204).send();
   } catch (err) {
-    const conhecido = erroPrisma(err, MSG_NOME_DUPLICADO);
-    if (conhecido)
-      return res.status(conhecido.status).json({ error: conhecido.error });
     console.error(err);
     return res.status(500).json({ error: "Ocorreu um erro no servidor" });
   }
@@ -127,7 +124,7 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
-router.patch("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, async (req, res) => {
   const id = Number(req.params.id);
   const userId = req.user?.id;
   const { nome, diaValidade, diaFechamento } = req.body;
