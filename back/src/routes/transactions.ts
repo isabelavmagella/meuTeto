@@ -153,19 +153,73 @@ router.post("/", autenticar, async (req, res) => {
 
 router.get("/", autenticar, async (req, res) => {
   const userId = req.user?.id;
+  const {
+    mes: mesParam,
+    tipo: tipoParam,
+    categoria: categoryParam,
+    por: porParam,
+  } = req.query;
+
+  const por = porParam ?? "compra";
+  if (por !== "compra" && por !== "vencimento") {
+    return res.status(400).json({ error: "Filtro de data inválido." });
+  }
 
   if (!userId) {
     return res.status(401).json({ error: "Usuário não autenticado" });
   }
 
+  const filtro: any = { userId };
+
+  if (mesParam) {
+    const mes = Number(String(mesParam).slice(5));
+    const ano = Number(String(mesParam).slice(0, 4));
+
+    const diasNoMes = new Date(ano, mes, 0).getDate();
+    const primeiroDia = new Date(Date.UTC(ano, mes - 1, 1));
+    const ultimoDia = new Date(
+      Date.UTC(ano, mes - 1, diasNoMes, 23, 59, 59, 999),
+    );
+    const intervalo = { gte: primeiroDia, lte: ultimoDia };
+
+    if (por === "compra") {
+      filtro.data = intervalo;
+    } else {
+      filtro.OR = [
+        { dataVencimento: intervalo },
+        { dataVencimento: null, data: intervalo },
+      ];
+    }
+  }
+
+  if (tipoParam) {
+    if (!Object.values(Tipo).includes(tipoParam as Tipo)) {
+      return res.status(400).json({ error: "Tipo inválido." });
+    }
+    filtro.tipo = tipoParam as Tipo;
+  }
+
   try {
+    if (categoryParam) {
+      const cat = await prisma.category.findUnique({
+        where: { id_userId: { id: Number(categoryParam), userId } },
+      });
+      if (!cat) {
+        return res.status(400).json({ error: "Categoria inválida." });
+      }
+      filtro.categoryId = Number(categoryParam);
+    }
+
     const transacoes = await prisma.transaction.findMany({
-      where: { userId },
+      where: filtro,
       include: {
         formaPagamento: true,
         category: true,
       },
-      orderBy: [{ data: "desc" }, { parcelaAtual: "asc" }],
+      orderBy:
+        por === "vencimento"
+          ? [{ dataVencimento: "asc" }, { data: "asc" }]
+          : [{ createdAt: "desc" }, { parcelaAtual: "asc" }],
     });
 
     return res.json(transacoes);
