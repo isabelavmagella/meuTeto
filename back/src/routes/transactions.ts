@@ -432,4 +432,53 @@ router.put("/:id", autenticar, async (req, res) => {
   }
 });
 
+router.delete("/", autenticar, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Usuário não autenticado" });
+  }
+
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500) {
+    return res
+      .status(400)
+      .json({ error: "Selecione as transações a excluir." });
+  }
+
+  const idsValidos = [...new Set(ids.map(inteiroPositivo))];
+  if (idsValidos.some((id) => !id)) {
+    return res.status(400).json({ error: "Transação inválida." });
+  }
+
+  try {
+    const selecionadas = await prisma.transaction.findMany({
+      where: { id: { in: idsValidos as number[] }, userId },
+      select: { parcelamentoId: true },
+    });
+
+    const parcelamentos = [
+      ...new Set(
+        selecionadas
+          .map((t) => t.parcelamentoId)
+          .filter((p): p is string => p !== null),
+      ),
+    ];
+
+    const { count } = await prisma.transaction.deleteMany({
+      where: {
+        userId,
+        OR: [
+          { id: { in: idsValidos as number[] } },
+          { parcelamentoId: { in: parcelamentos } },
+        ],
+      },
+    });
+
+    return res.json({ excluidas: count });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Ocorreu um erro no servidor" });
+  }
+});
+
 export default router;
