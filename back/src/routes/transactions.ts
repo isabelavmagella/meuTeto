@@ -27,10 +27,10 @@ router.post("/", autenticar, async (req, res) => {
     !tipo ||
     valor == null ||
     valor === "" ||
-    !descricao?.trim() ||
+    typeof descricao !== "string" ||
+    !descricao.trim() ||
     !data ||
-    !categoryId ||
-    !formaPagamentoId
+    !categoryId
   ) {
     return res
       .status(400)
@@ -47,11 +47,18 @@ router.post("/", autenticar, async (req, res) => {
   }
 
   const categoria = inteiroPositivo(categoryId);
-  const formaPagamento = inteiroPositivo(formaPagamentoId);
-  if (!categoria || !formaPagamento) {
-    return res
-      .status(400)
-      .json({ error: "Categoria ou forma de pagamento inválida." });
+  if (!categoria) {
+    return res.status(400).json({ error: "Categoria inválida." });
+  }
+
+  let formaPagamento: number | null = null;
+  if (formaPagamentoId != null && formaPagamentoId !== "") {
+    formaPagamento = inteiroPositivo(formaPagamentoId);
+    if (!formaPagamento) {
+      return res.status(400).json({ error: "Forma de pagamento inválida." });
+    }
+  } else if (tipo === Tipo.DESPESA) {
+    return res.status(400).json({ error: "Informe a forma de pagamento." });
   }
 
   const dataConvertida = new Date(data);
@@ -79,16 +86,40 @@ router.post("/", autenticar, async (req, res) => {
   };
 
   try {
-    const forma = await prisma.formaPagamento.findUnique({
-      where: { id_userId: { id: formaPagamento, userId } },
-    });
+    const formaExiste = formaPagamento
+      ? await prisma.formaPagamento.findUnique({
+          where: { id_userId: { id: formaPagamento, userId } },
+        })
+      : null;
 
-    if (!forma || !forma.ativo) {
+    if (formaPagamento && (!formaExiste || !formaExiste.ativo)) {
       return res.status(400).json({ error: "Forma de pagamento inválida." });
     }
 
+    const diaValidade = formaExiste?.diaValidade ?? null;
+    const venc1 = diaValidade
+      ? vencimentoPrimeiraParcela(
+          dataConvertida,
+          diaValidade,
+          formaExiste!.diaFechamento,
+        )
+      : null;
+
+    const vencimentoDaParcela = (i: number) =>
+      venc1 ? dataNoMes(venc1, i, diaValidade!) : null;
+
+    const categoriaExiste = await prisma.category.findUnique({
+      where: { id_userId: { id: categoria, userId } },
+    });
+
+    if (!categoriaExiste || !categoriaExiste.ativo) {
+      return res.status(400).json({ error: "Categoria inválida." });
+    }
+
     if (parcelas === 1) {
-      const transacao = await prisma.transaction.create({ data: dadosBase });
+      const transacao = await prisma.transaction.create({
+        data: { ...dadosBase, dataVencimento: vencimentoDaParcela(0) },
+      });
       return res.status(201).json(transacao);
     }
 
@@ -102,6 +133,7 @@ router.post("/", autenticar, async (req, res) => {
             totalParcelas: parcelas,
             parcelamentoId,
             parcelaAtual: i + 1,
+            dataVencimento: vencimentoDaParcela(i),
           },
         }),
       ),
@@ -136,26 +168,7 @@ router.get("/", autenticar, async (req, res) => {
       orderBy: [{ data: "desc" }, { parcelaAtual: "asc" }],
     });
 
-    const transacoesComVencimento = transacoes.map((t) => {
-      const diaValidade = t.formaPagamento?.diaValidade;
-      if (!diaValidade) {
-        return { ...t, dataVencimento: null };
-      }
-
-      const venc1 = vencimentoPrimeiraParcela(
-        t.data,
-        diaValidade,
-        t.formaPagamento.diaFechamento,
-      );
-      const deslocamento = (t.parcelaAtual ?? 1) - 1;
-
-      return {
-        ...t,
-        dataVencimento: dataNoMes(venc1, deslocamento, diaValidade),
-      };
-    });
-
-    return res.json(transacoesComVencimento);
+    return res.json(transacoes);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erro ao buscar transações." });
