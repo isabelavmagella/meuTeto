@@ -2,7 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
 import { Tipo } from "../generated/prisma/enums.js";
-import { inteiroPositivo } from "../utils/validacao.js";
+import { inteiroPositivo, mesmoDia } from "../utils/validacao.js";
 import { dataNoMes, vencimentoPrimeiraParcela } from "../utils/datas.js";
 
 const router = Router();
@@ -258,6 +258,175 @@ router.delete("/:id", autenticar, async (req, res) => {
 
     return res.status(204).send();
   } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Ocorreu um erro no servidor" });
+  }
+});
+
+router.put("/:id", autenticar, async (req, res) => {
+  const {
+    tipo,
+    valor,
+    descricao,
+    data,
+    categoryId,
+    formaPagamentoId,
+    totalParcelas,
+  } = req.body;
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Usuário não autenticado" });
+  }
+
+  const id = inteiroPositivo(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Transação inválida." });
+  }
+
+  if (
+    !tipo ||
+    valor == null ||
+    valor === "" ||
+    typeof descricao !== "string" ||
+    !descricao.trim() ||
+    !data ||
+    !categoryId
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Preencha todos os campos obrigatórios." });
+  }
+
+  if (!Object.values(Tipo).includes(tipo)) {
+    return res.status(400).json({ error: "Tipo inválido" });
+  }
+
+  const valorNumero = Number(valor);
+  if (!Number.isFinite(valorNumero) || valorNumero <= 0) {
+    return res.status(400).json({ error: "Valor inválido." });
+  }
+
+  const categoria = inteiroPositivo(categoryId);
+  if (!categoria) {
+    return res.status(400).json({ error: "Categoria inválida." });
+  }
+
+  let formaPagamento: number | null = null;
+  if (formaPagamentoId != null && formaPagamentoId !== "") {
+    formaPagamento = inteiroPositivo(formaPagamentoId);
+    if (!formaPagamento) {
+      return res.status(400).json({ error: "Forma de pagamento inválida." });
+    }
+  } else if (tipo === Tipo.DESPESA) {
+    return res.status(400).json({ error: "Informe a forma de pagamento." });
+  }
+
+  const dataConvertida = new Date(data);
+  if (isNaN(dataConvertida.getTime())) {
+    return res.status(400).json({ error: "Data inválida." });
+  }
+
+  try {
+    const atual = await prisma.transaction.findFirst({
+      where: { id, userId },
+      select: {
+        parcelamentoId: true,
+        totalParcelas: true,
+        data: true,
+        formaPagamentoId: true,
+        categoryId: true,
+      },
+    });
+
+    if (!atual) {
+      return res.status(404).json({ error: "Transação não encontrada." });
+    }
+
+    if (
+      totalParcelas != null &&
+      totalParcelas !== "" &&
+      inteiroPositivo(totalParcelas) !== (atual.totalParcelas ?? 1)
+    ) {
+      return res.status(400).json({
+        error:
+          "Não é possível alterar o número de parcelas. Exclua e lance novamente.",
+      });
+    }
+
+    const mudouForma = formaPagamento !== atual.formaPagamentoId;
+    const mudouCategoria = categoria !== atual.categoryId;
+    const mudouData = !mesmoDia(dataConvertida, atual.data);
+
+    const forma = formaPagamento
+      ? await prisma.formaPagamento.findUnique({
+          where: { id_userId: { id: formaPagamento, userId } },
+        })
+      : null;
+    if (formaPagamento && (!forma || (mudouForma && !forma.ativo))) {
+      return res.status(400).json({ error: "Forma de pagamento inválida." });
+    }
+
+    const cat = await prisma.category.findUnique({
+      where: { id_userId: { id: categoria, userId } },
+    });
+    if (!cat || (mudouCategoria && !cat.ativo)) {
+      return res.status(400).json({ error: "Categoria inválida." });
+    }
+
+    const where = atual.parcelamentoId
+      ? { parcelamentoId: atual.parcelamentoId, userId }
+      : { id, userId };
+
+    const dadosComuns = {
+      tipo,
+      valor: String(valor),
+      descricao: descricao.trim(),
+      data: dataConvertida,
+      categoryId: categoria,
+      formaPagamentoId: formaPagamento,
+    };
+
+    if (!mudouForma && !mudouData) {
+      await prisma.transaction.updateMany({ where, data: dadosComuns });
+    } else {
+      const parcelas = await prisma.transaction.findMany({
+        where,
+        select: { id: true, parcelaAtual: true },
+      });
+
+      const dia = forma?.diaValidade ?? null;
+      const venc1 = dia
+        ? vencimentoPrimeiraParcela(dataConvertida, dia, forma!.diaFechamento)
+        : null;
+
+      await prisma.$transaction(
+        parcelas.map((p) =>
+          prisma.transaction.update({
+            where: { id: p.id },
+            data: {
+              ...dadosComuns,
+              dataVencimento: venc1
+                ? dataNoMes(venc1, (p.parcelaAtual ?? 1) - 1, dia!)
+                : null,
+            },
+          }),
+        ),
+      );
+    }
+
+    const atualizadas = await prisma.transaction.findMany({
+      where,
+      include: { formaPagamento: true, category: true },
+      orderBy: { parcelaAtual: "asc" },
+    });
+
+    return res.json(atualizadas);
+  } catch (err: any) {
+    if (err?.code === "P2003") {
+      return res
+        .status(400)
+        .json({ error: "Categoria ou forma de pagamento inválida." });
+    }
     console.error(err);
     return res.status(500).json({ error: "Ocorreu um erro no servidor" });
   }
