@@ -5,6 +5,9 @@ import { Tipo } from "../generated/prisma/enums.js";
 import { inteiroPositivo, mesmoDia } from "../utils/validacao.js";
 import { dataNoMes, vencimentoPrimeiraParcela } from "../utils/datas.js";
 
+const MSG_PARCELA_SEM_VENCIMENTO =
+  "Compras parceladas exigem uma forma de pagamento com dia de vencimento.";
+
 const router = Router();
 
 router.post("/", autenticar, async (req, res) => {
@@ -101,6 +104,10 @@ router.post("/", autenticar, async (req, res) => {
     }
 
     const diaValidade = formaExiste?.diaValidade ?? null;
+    if (parcelas > 1 && !diaValidade) {
+      return res.status(400).json({ error: MSG_PARCELA_SEM_VENCIMENTO });
+    }
+
     const venc1 = diaValidade
       ? vencimentoPrimeiraParcela(
           dataConvertida,
@@ -374,6 +381,9 @@ router.put("/:id", autenticar, async (req, res) => {
       : null;
     if (formaPagamento && (!forma || (mudouForma && !forma.ativo))) {
       return res.status(400).json({ error: "Forma de pagamento inválida." });
+    }
+    if (atual.parcelamentoId && mudouForma && !forma?.diaValidade) {
+      return res.status(400).json({ error: MSG_PARCELA_SEM_VENCIMENTO });
     }
 
     const cat = categoria
