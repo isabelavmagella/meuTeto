@@ -30,3 +30,10 @@ export function vencimentoPrimeiraParcela(
   const mesesAteVencimento = diaValidade > diaFechamento ? 0 : 1;
   return dataNoMes(fechamento, mesesAteVencimento, diaValidade);
 }
+
+export function primeiroDiaDoMes(mesAno: unknown): Date | null {
+  if (typeof mesAno !== "string" || !/^\d{4}-\d{2}$/.test(mesAno)) return null;
+  const [ano, mes] = mesAno.split("-").map(Number) as [number, number];
+  if (mes < 1 || mes > 12) return null;
+  return new Date(Date.UTC(ano, mes - 1, 1));
+}
