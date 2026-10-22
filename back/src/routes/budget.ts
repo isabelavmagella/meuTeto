@@ -45,7 +45,7 @@ router.post("/", autenticar, async (req, res) => {
       where: { id: categoria, userId },
     });
 
-    if (!categoriaExiste) {
+    if (!categoriaExiste || !categoriaExiste.ativo) {
       return res.status(404).json({ error: "Categoria não encontrada." });
     }
 
@@ -158,7 +158,8 @@ router.put("/:id", autenticar, async (req, res) => {
         where: { id: cat, userId },
       });
 
-      if (!categoriaExiste) {
+      const mudouCategoria = cat !== budgetProprio.categoryId;
+      if (!categoriaExiste || (mudouCategoria && !categoriaExiste.ativo)) {
         return res.status(404).json({ error: "Categoria não encontrada." });
       }
 
