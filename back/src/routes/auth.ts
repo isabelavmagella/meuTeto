@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { erroPrisma } from "../utils/erros.js";
+import { autenticar } from "../middlewares/auth.js";
 
 const SENHA_MIN = 8;
 const MSG_EMAIL_DUPLICADO = "E-mail já cadastrado";
@@ -80,10 +81,29 @@ router.post("/login", async (req, res) => {
       expiresIn: "8h",
     });
 
-    return res.json({ token });
+    return res.json({
+      token,
+      user: { id: user.id, nome: user.nome, email: user.email },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Ocorreu um erro no servidor" });
+  }
+});
+
+router.get("/me", autenticar, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { id: true, nome: true, email: true },
+    });
+
+    if (!user) return res.status(401).json({ error: "Não autenticado" });
+
+    return res.json(user);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao buscar usuário" });
   }
 });
 
