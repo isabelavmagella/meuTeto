@@ -29,8 +29,7 @@ router.post("/", autenticar, async (req, res) => {
     valor === "" ||
     typeof descricao !== "string" ||
     !descricao.trim() ||
-    !data ||
-    !categoryId
+    !data
   ) {
     return res
       .status(400)
@@ -46,9 +45,14 @@ router.post("/", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Valor inválido." });
   }
 
-  const categoria = inteiroPositivo(categoryId);
-  if (!categoria) {
-    return res.status(400).json({ error: "Categoria inválida." });
+  let categoria: number | null = null;
+  if (categoryId != null && categoryId !== "") {
+    categoria = inteiroPositivo(categoryId);
+    if (!categoria) {
+      return res.status(400).json({ error: "Categoria inválida." });
+    }
+  } else if (tipo === Tipo.DESPESA) {
+    return res.status(400).json({ error: "Informe a categoria." });
   }
 
   let formaPagamento: number | null = null;
@@ -108,11 +112,13 @@ router.post("/", autenticar, async (req, res) => {
     const vencimentoDaParcela = (i: number) =>
       venc1 ? dataNoMes(venc1, i, diaValidade!) : null;
 
-    const categoriaExiste = await prisma.category.findUnique({
-      where: { id_userId: { id: categoria, userId } },
-    });
+    const categoriaExiste = categoria
+      ? await prisma.category.findUnique({
+          where: { id_userId: { id: categoria, userId } },
+        })
+      : null;
 
-    if (!categoriaExiste || !categoriaExiste.ativo) {
+    if (categoria && (!categoriaExiste || !categoriaExiste.ativo)) {
       return res.status(400).json({ error: "Categoria inválida." });
     }
 
@@ -289,8 +295,7 @@ router.put("/:id", autenticar, async (req, res) => {
     valor === "" ||
     typeof descricao !== "string" ||
     !descricao.trim() ||
-    !data ||
-    !categoryId
+    !data
   ) {
     return res
       .status(400)
@@ -306,9 +311,14 @@ router.put("/:id", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Valor inválido." });
   }
 
-  const categoria = inteiroPositivo(categoryId);
-  if (!categoria) {
-    return res.status(400).json({ error: "Categoria inválida." });
+  let categoria: number | null = null;
+  if (categoryId != null && categoryId !== "") {
+    categoria = inteiroPositivo(categoryId);
+    if (!categoria) {
+      return res.status(400).json({ error: "Categoria inválida." });
+    }
+  } else if (tipo === Tipo.DESPESA) {
+    return res.status(400).json({ error: "Informe a categoria." });
   }
 
   let formaPagamento: number | null = null;
@@ -366,10 +376,12 @@ router.put("/:id", autenticar, async (req, res) => {
       return res.status(400).json({ error: "Forma de pagamento inválida." });
     }
 
-    const cat = await prisma.category.findUnique({
-      where: { id_userId: { id: categoria, userId } },
-    });
-    if (!cat || (mudouCategoria && !cat.ativo)) {
+    const cat = categoria
+      ? await prisma.category.findUnique({
+          where: { id_userId: { id: categoria, userId } },
+        })
+      : null;
+    if (categoria && (!cat || (mudouCategoria && !cat.ativo))) {
       return res.status(400).json({ error: "Categoria inválida." });
     }
 

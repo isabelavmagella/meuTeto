@@ -67,12 +67,12 @@ model Transaction {
   parcelamentoId   String?
   parcelaAtual     Int?
   totalParcelas    Int?
-  categoryId       Int
+  categoryId       Int?
   userId           Int
   formaPagamentoId Int?
   dataVencimento   DateTime? @db.Date
 
-  category       Category        @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_categoryId")
+  category       Category?       @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_categoryId")
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transaction_userId")
   formaPagamento FormaPagamento? @relation(fields: [formaPagamentoId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_formaPagamentoId")
 
