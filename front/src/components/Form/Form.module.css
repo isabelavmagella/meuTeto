@@ -1,0 +1,245 @@
+:global(form) {
+  display: grid;
+  gap: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+:global(label) {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.control {
+  position: relative;
+}
+
+:global(input) {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--field);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-field);
+  transition:
+    border-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out),
+    background-color 240ms var(--ease-out);
+}
+
+:global(input::placeholder) {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+:global(input:hover) {
+  border-color: var(--border-strong);
+}
+
+:global(input:focus-visible) {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+:global(input[aria-invalid="true"]) {
+  border-color: var(--danger);
+}
+
+:global(input[aria-invalid="true"]:focus-visible) {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.fieldIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 160ms var(--ease-out);
+}
+
+.control:focus-within .fieldIcon {
+  color: var(--brand);
+}
+
+.control:has(:global(input[aria-invalid="true"])) .fieldIcon {
+  color: var(--danger);
+}
+
+.controlIcon :global(input) {
+  padding-left: 48px;
+}
+
+.controlPassword :global(input) {
+  padding-right: 56px;
+}
+
+.reveal {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  translate: 0 -50%;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 120ms var(--ease-out),
+    background-color 120ms var(--ease-out);
+}
+
+.reveal:hover {
+  color: var(--text);
+}
+
+.reveal:active {
+  background: var(--brand-soft);
+}
+
+.reveal:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+
+.reveal .iconShow,
+.reveal .iconHide {
+  width: 22px;
+  height: 22px;
+}
+
+.reveal .iconHide {
+  display: none;
+}
+
+.reveal[aria-pressed="true"] .iconShow {
+  display: none;
+}
+
+.reveal[aria-pressed="true"] .iconHide {
+  display: block;
+}
+
+.error {
+  margin: 0;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--danger);
+}
+
+.error:empty,
+.notice:empty {
+  display: none;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-field);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.noticeError {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.noticeSuccess {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.submit {
+  position: relative;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: var(--submit-shadow);
+  transition:
+    background-color 140ms var(--ease-out),
+    scale 140ms var(--ease-out);
+}
+
+.submit:hover {
+  background: var(--brand-hover);
+}
+
+.submit:active {
+  background: var(--brand-press);
+  scale: 0.985;
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.submit[aria-busy="true"] {
+  cursor: progress;
+}
+
+.submit[aria-busy="true"] .label {
+  opacity: 0;
+}
+
+.spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid color-mix(in srgb, var(--on-brand) 35%, transparent);
+  border-top-color: var(--on-brand);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.submit[aria-busy="true"] .spinner {
+  opacity: 1;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submit[aria-busy="true"] .spinner {
+    animation: spin 1.4s linear infinite !important;
+  }
+}
