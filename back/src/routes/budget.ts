@@ -3,9 +3,11 @@ import { autenticar } from "../middlewares/auth.js";
 import { inteiroPositivo } from "../utils/validacao.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
+import { primeiroDiaDoMes } from "../utils/datas.js";
 
 const MSG_BUDGET_DUPLICADO =
   "Já existe um orçamento definido para esta categoria neste mês.";
+const MSG_MES_INVALIDO = "Mês inválido. Use o formato AAAA-MM.";
 
 const router = Router();
 
@@ -33,19 +35,10 @@ router.post("/", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Categoria inválida." });
   }
 
-  const partesMesAno = mesAno.split("-");
-  if (partesMesAno.length !== 2) {
-    return res
-      .status(400)
-      .json({ error: "Formato de mês/ano inválido. Use MM/YYYY." });
+  const dataMes = primeiroDiaDoMes(mesAno);
+  if (!dataMes) {
+    return res.status(400).json({ error: MSG_MES_INVALIDO });
   }
-
-  const [mes, ano] = partesMesAno.map(Number);
-  if (!mes || !ano || mes < 1 || mes > 12) {
-    return res.status(400).json({ error: "Mês ou ano inválidos." });
-  }
-
-  const dataMes = new Date(ano, mes - 1, 1);
 
   try {
     const categoriaExiste = await prisma.category.findFirst({
@@ -102,20 +95,13 @@ router.get("/", autenticar, async (req, res) => {
 
   const filtro: { userId: number; mes?: Date } = { userId };
 
-  if (mesAno && typeof mesAno === "string") {
-    const partesMesAno = mesAno.split("-");
-    if (partesMesAno.length !== 2) {
-      return res
-        .status(400)
-        .json({ error: "Mês ou ano inválidos." });
+  if (mesAno) {
+    const dataMes = primeiroDiaDoMes(mesAno);
+    if (!dataMes) {
+      return res.status(400).json({ error: MSG_MES_INVALIDO });
     }
 
-    const [mes, ano] = partesMesAno.map(Number);
-    if (!mes || !ano || mes < 1 || mes > 12) {
-      return res.status(400).json({ error: "Mês ou ano inválidos." });
-    }
-
-    filtro.mes = new Date(ano, mes - 1, 1);
+    filtro.mes = dataMes;
   }
 
   try {
@@ -181,23 +167,12 @@ router.put("/:id", autenticar, async (req, res) => {
 
     let dataMes = budgetProprio.mes;
     if (mesAno != null && mesAno !== "") {
-      if (typeof mesAno !== "string") {
-        return res.status(400).json({ error: "Mês ou ano inválidos." });
+      const novoMes = primeiroDiaDoMes(mesAno);
+      if (!novoMes) {
+        return res.status(400).json({ error: MSG_MES_INVALIDO });
       }
 
-      const partesMesAno = mesAno.split("-");
-      if (partesMesAno.length !== 2) {
-        return res
-          .status(400)
-          .json({ error: "Mês ou ano inválidos." });
-      }
-
-      const [mes, ano] = partesMesAno.map(Number);
-      if (!mes || !ano || mes < 1 || mes > 12) {
-        return res.status(400).json({ error: "Mês ou ano inválidos." });
-      }
-
-      dataMes = new Date(ano, mes - 1, 1);
+      dataMes = novoMes;
     }
 
     const budgetExistente = await prisma.budget.findFirst({
