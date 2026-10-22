@@ -1,0 +1,184 @@
+:root {
+  --brand: #2d2e83;
+  --brand-hover: #24256c;
+  --brand-press: #1c1d56;
+  --brand-soft: #ebebf7;
+  --on-brand: #ffffff;
+  --hero-bg: #2d2e83;
+  --hero-ink: #fffafa;
+  --hero-raised: #24256c;
+  --hero-border: #4a49a0;
+  --hero-ink-muted: #c9c9ee;
+  --hero-active-ink: #2d2e83;
+  --surface: #ffffff;
+  --field: #f7f7fb;
+  --text: #16173a;
+  --text-muted: #55567a;
+  --border: #cfd0e3;
+  --border-strong: #8e8fb3;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --warning: #b54708;
+  --attention: #f5b400;
+  --attention-soft: #fff0c2;
+  --on-attention-soft: #8a5a00;
+  --success: #146c43;
+  --success-soft: #e6f4ec;
+  --meter-empty: #e3e3ef;
+  --focus: #2d2e83;
+  --submit-shadow: 0 8px 20px -8px rgb(45 46 131 / 0.55);
+  --sheet-shadow: 0 -12px 32px -16px rgb(22 23 58 / 0.25);
+
+  --radius-field: 12px;
+  --radius-sheet: 28px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-sans:
+    "Manrope", system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --brand: #fffafa;
+  --brand-hover: #f1ecec;
+  --brand-press: #e2dddd;
+  --brand-soft: #34363b;
+  --on-brand: #1c1d20;
+  --hero-bg: #2b2d31;
+  --hero-ink: #fffafa;
+  --hero-raised: #36383e;
+  --hero-border: #4a4c53;
+  --hero-ink-muted: #b3b4ba;
+  --hero-active-ink: #1c1d20;
+  --surface: #1c1d20;
+  --field: #26272b;
+  --text: #fffafa;
+  --text-muted: #b3b4ba;
+  --border: #4a4c53;
+  --border-strong: #75777e;
+  --danger: #ff9b8f;
+  --danger-soft: #3b2523;
+  --warning: #f5b971;
+  --attention: #f5b400;
+  --attention-soft: #3a301a;
+  --on-attention-soft: #f5b971;
+  --success: #7ed6a6;
+  --success-soft: #1e3228;
+  --meter-empty: #3a3c41;
+  --focus: #fffafa;
+  --submit-shadow: 0 8px 20px -10px rgb(0 0 0 / 0.6);
+  --sheet-shadow: 0 -12px 32px -16px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --brand: #fffafa;
+    --brand-hover: #f1ecec;
+    --brand-press: #e2dddd;
+    --brand-soft: #34363b;
+    --on-brand: #1c1d20;
+    --hero-bg: #2b2d31;
+    --hero-ink: #fffafa;
+    --hero-raised: #36383e;
+    --hero-border: #4a4c53;
+    --hero-ink-muted: #b3b4ba;
+    --hero-active-ink: #1c1d20;
+    --surface: #1c1d20;
+    --field: #26272b;
+    --text: #fffafa;
+    --text-muted: #b3b4ba;
+    --border: #4a4c53;
+    --border-strong: #75777e;
+    --danger: #ff9b8f;
+    --danger-soft: #3b2523;
+    --warning: #f5b971;
+    --attention: #f5b400;
+    --attention-soft: #3a301a;
+    --on-attention-soft: #f5b971;
+    --success: #7ed6a6;
+    --success-soft: #1e3228;
+    --meter-empty: #3a3c41;
+    --focus: #fffafa;
+    --submit-shadow: 0 8px 20px -10px rgb(0 0 0 / 0.6);
+    --sheet-shadow: 0 -12px 32px -16px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--text);
+  font: 400 1rem/1.5 var(--font-sans);
+  caret-color: var(--brand);
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 240ms var(--ease-out),
+    color 240ms var(--ease-out);
+}
+
+img {
+  max-width: 100%;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}

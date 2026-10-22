@@ -25,7 +25,7 @@ CREATE TABLE "Category" (
 CREATE TABLE "FormaPagamento" (
     "id" SERIAL NOT NULL,
     "nome" TEXT NOT NULL,
-    "dataValidade" TIMESTAMP(3),
+    "diaValidade" INTEGER,
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "FormaPagamento_pkey" PRIMARY KEY ("id")
