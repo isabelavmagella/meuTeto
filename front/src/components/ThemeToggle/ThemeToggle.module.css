@@ -70,3 +70,31 @@
     outline-color: var(--focus);
   }
 }
+
+.themeToggle.header {
+  position: static;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--hero-border);
+  background: var(--hero-raised);
+  color: #fff;
+}
+
+.themeToggle.header:hover {
+  border-color: var(--hero-ink-muted);
+  background: var(--hero-raised);
+}
+
+.themeToggle.header:active {
+  background: var(--hero-bg);
+}
+
+.themeToggle.header:focus-visible {
+  outline-color: #fff;
+}
+
+.themeToggle.header .iconMoon,
+.themeToggle.header .iconSun {
+  width: 18px;
+  height: 18px;
+}

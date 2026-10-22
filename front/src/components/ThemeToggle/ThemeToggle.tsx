@@ -2,13 +2,17 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import styles from "./ThemeToggle.module.css";
 
-export function ThemeToggle() {
+type Props = {
+  variante?: "flutuante" | "header";
+};
+
+export function ThemeToggle({ variante = "flutuante" }: Props) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       type="button"
-      className={styles.themeToggle}
+      className={`${styles.themeToggle} ${variante === "header" ? styles.header : ""}`}
       onClick={toggleTheme}
       aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
     >
