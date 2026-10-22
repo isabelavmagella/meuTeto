@@ -189,12 +189,12 @@ router.delete("/", autenticar, async (req, res) => {
   if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500) {
     return res
       .status(400)
-      .json({ error: "Selecione as categorias a excluir." });
+      .json({ error: "Selecione as formas de pagamento a excluir." });
   }
 
   const idsValidos = [...new Set(ids.map(inteiroPositivo))];
   if (idsValidos.some((id) => !id)) {
-    return res.status(400).json({ error: "Categoria inválida." });
+    return res.status(400).json({ error: "Forma de pagamento inválida." });
   }
 
   try {
