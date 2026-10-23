@@ -12,6 +12,7 @@ import { FiltroSelect } from "../../components/Header/FiltroSelect";
 import { Header } from "../../components/Header/Header";
 import { ResumoTransacoes } from "../../components/Transactions/ResumoTransacoes";
 import { TabelaTransacoes } from "../../components/Transactions/TabelaTransacoes";
+import { ModalTransacao } from "../../components/Transactions/ModalTransacao";
 import {
   IconeCalendario,
   IconeCartao,
@@ -23,6 +24,7 @@ const POR_PAGINA = 12;
 export function Transactions() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [pagamentos, setPagamentos] = useState<FormaPagamento[]>([]);
+  const [emEdicao, setEmEdicao] = useState<Transacao | "nova" | null>(null);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [consultaCarregada, setConsultaCarregada] = useState("");
   const [versao, setVersao] = useState(0);
@@ -171,6 +173,7 @@ export function Transactions() {
         receitas={somar("RECEITA")}
         despesas={somar("DESPESA")}
         selecionadas={selecionadas.size}
+        onAdicionar={() => setEmEdicao("nova")}
         onApagarSelecionadas={() =>
           apagar(transacoesFiltradas.filter((t) => selecionadas.has(t.id)))
         }
@@ -186,9 +189,23 @@ export function Transactions() {
         selecionadas={selecionadas}
         onAlternar={alternar}
         onAlternarTodas={alternarTodas}
+        onEditar={setEmEdicao}
         onApagar={(t) => apagar([t])}
         carregando={carregando}
       />
+
+      {emEdicao && (
+        <ModalTransacao
+          transacao={emEdicao === "nova" ? undefined : emEdicao}
+          categorias={categorias}
+          pagamentos={pagamentos}
+          onFechar={() => setEmEdicao(null)}
+          onSalvar={() => {
+            setEmEdicao(null);
+            setVersao((v) => v + 1);
+          }}
+        />
+      )}
     </div>
   );
 }
