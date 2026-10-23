@@ -1,0 +1,217 @@
+.card {
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgb(22 23 58 / 0.08);
+  overflow: hidden;
+  transition: opacity 0.15s;
+}
+
+.carregando {
+  opacity: 0.6;
+}
+
+.rolagem {
+  overflow-x: auto;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tabela th {
+  background: var(--hero-bg);
+  color: var(--hero-ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 16px;
+}
+
+.tabela td {
+  padding: 5px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+
+.tabela tbody tr:nth-child(even) {
+  background: var(--field);
+}
+
+.tabela tbody tr.marcada {
+  background: var(--brand-soft);
+}
+
+.tabela input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.colCheck {
+  width: 1%;
+}
+
+.direita {
+  text-align: right !important;
+}
+
+.centro {
+  text-align: center !important;
+}
+
+.muted {
+  color: var(--text-muted) !important;
+}
+
+.descricao {
+  width: 30%;
+}
+
+.valor {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.valorReceita {
+  color: var(--success) !important;
+}
+
+.tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tipo > span {
+  font-size: 9px;
+}
+
+.tipoDespesa {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.tipoReceita {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.categoria {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.acoes {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.acoes button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--meter-empty);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.acoes button:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.acoes button:last-child:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.acoes button:focus-visible,
+.paginacao button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vazio {
+  text-align: center;
+  padding: 40px 16px !important;
+  color: var(--text-muted) !important;
+}
+
+.rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  min-height: 56px;
+}
+
+.paginacao {
+  display: flex;
+  gap: 6px;
+}
+
+.paginacao button {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.paginacao button:first-child,
+.paginacao button:last-child {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.paginacao button:disabled {
+  color: var(--border);
+  cursor: not-allowed;
+}
+
+.paginacao button:not(:disabled):hover {
+  color: var(--text);
+}
+
+.paginacao .paginaAtual {
+  background: var(--brand-soft);
+  color: var(--brand);
+}

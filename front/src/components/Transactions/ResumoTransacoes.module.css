@@ -1,0 +1,136 @@
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+.esquerda,
+.direita {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.adicionar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--submit-shadow);
+  transition: background 0.15s;
+}
+
+.adicionar:hover {
+  background: var(--brand-hover);
+}
+
+.adicionar:active {
+  background: var(--brand-press);
+}
+
+.adicionar:focus-visible,
+.apagar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.totais {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 13px;
+}
+
+.totais > div {
+  display: flex;
+  gap: 6px;
+  padding: 0 14px;
+}
+
+.totais > div:first-child {
+  padding-left: 0;
+}
+
+.totais > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.totais dt {
+  color: var(--text-muted);
+}
+
+.totais dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.quantidade dd {
+  color: var(--text);
+}
+
+.receita {
+  color: var(--success);
+}
+
+.despesa {
+  color: var(--danger);
+}
+
+.saldo {
+  color: var(--brand);
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dica {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.apagar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field);
+  background: var(--surface);
+  color: var(--danger);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.apagar:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.apagar:disabled {
+  color: var(--border-strong);
+  cursor: not-allowed;
+}
