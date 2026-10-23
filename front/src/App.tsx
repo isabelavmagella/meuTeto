@@ -5,6 +5,7 @@ import { Login } from "./pages/Login/Login";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { Dashboard } from "./pages/Dashboard/Dashboard";
 import { Transactions } from "./pages/Transactions/Transactions";
+import { Settings } from "./pages/Settings/Settings";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
     </AuthProvider>

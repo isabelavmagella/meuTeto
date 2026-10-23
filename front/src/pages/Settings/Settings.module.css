@@ -1,0 +1,20 @@
+.page {
+  min-height: 100vh;
+  padding: 18px;
+  background: var(--brand-soft);
+  color: var(--text);
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
