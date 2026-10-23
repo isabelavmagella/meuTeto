@@ -5,7 +5,6 @@ import { HISTORICO_VAZIO, PERIODOS, RESUMO_VAZIO } from "./constants";
 import { capitalizar, nomeDoMes } from "./formatadores";
 import { useMesAtivo } from "./useMesAtivo";
 import { AlertaOrcamento } from "../../components/Dashboard/AlertaOrcamento";
-import { DashboardHeader, type Aba } from "../../components/Dashboard/DashboardHeader";
 import { DistribuicaoGastos } from "../../components/Dashboard/DistribuicaoGastos";
 import { KpiCard } from "../../components/Dashboard/KpiCard";
 import { AvisoErro, SecaoCarregavel } from "../../components/Dashboard/Layout";
@@ -13,9 +12,11 @@ import { MetaRealizado } from "../../components/Dashboard/MetaRealizado";
 import { ReceitaDespesaChart } from "../../components/Dashboard/ReceitaDespesaChart";
 import { SaldoMensalChart } from "../../components/Dashboard/SaldoMensalChart";
 import { TopCategorias } from "../../components/Dashboard/TopCategorias";
+import { FiltroSelect } from "../../components/Header/FiltroSelect";
+import { Header } from "../../components/Header/Header";
+import { IconeCalendario } from "../../components/Header/Icones";
 
 export function Dashboard() {
-  const [aba, setAba] = useState<Aba>("painel");
   const [periodo, setPeriodo] = useState(
     PERIODOS[PERIODOS.length - 1]?.valor ?? "",
   );
@@ -42,12 +43,15 @@ export function Dashboard() {
 
   return (
     <div className={styles.page}>
-      <DashboardHeader
-        aba={aba}
-        onTrocarAba={setAba}
-        periodo={periodo}
-        onTrocarPeriodo={trocarPeriodo}
-      />
+      <Header>
+        <FiltroSelect
+          icone={<IconeCalendario />}
+          rotulo="Período"
+          valor={periodo}
+          opcoes={PERIODOS}
+          onChange={trocarPeriodo}
+        />
+      </Header>
 
       {dados.erro && (
         <AvisoErro
@@ -108,7 +112,10 @@ export function Dashboard() {
         />
       </SecaoCarregavel>
 
-      <SecaoCarregavel className={styles.distGrid} carregando={dados.carregando}>
+      <SecaoCarregavel
+        className={styles.distGrid}
+        carregando={dados.carregando}
+      >
         <DistribuicaoGastos
           categorias={categorias}
           totalDespesa={despesa.valor}
