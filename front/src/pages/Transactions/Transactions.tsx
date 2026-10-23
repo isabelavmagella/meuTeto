@@ -10,6 +10,11 @@ import {
 } from "./api";
 import { FiltroSelect } from "../../components/Header/FiltroSelect";
 import { Header } from "../../components/Header/Header";
+import { BarraMobile } from "../../components/Header/BarraMobile";
+import {
+  SheetFiltros,
+  type Filtros,
+} from "../../components/Transactions/SheetFiltros";
 import { ResumoTransacoes } from "../../components/Transactions/ResumoTransacoes";
 import { TabelaTransacoes } from "../../components/Transactions/TabelaTransacoes";
 import { ModalTransacao } from "../../components/Transactions/ModalTransacao";
@@ -24,6 +29,7 @@ const POR_PAGINA = 12;
 export function Transactions() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [pagamentos, setPagamentos] = useState<FormaPagamento[]>([]);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Transacao | "nova" | null>(null);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [consultaCarregada, setConsultaCarregada] = useState("");
@@ -102,6 +108,15 @@ export function Transactions() {
     };
   }
 
+  function aplicarFiltros(filtros: Filtros) {
+    setCategoria(filtros.categoria);
+    setPagamento(filtros.pagamento);
+    setPeriodo(filtros.periodo);
+    setPagina(1);
+    setSelecionadas(new Set());
+    setFiltrosAbertos(false);
+  }
+
   function alternar(id: number) {
     setSelecionadas((atual) => {
       const nova = new Set(atual);
@@ -168,6 +183,14 @@ export function Transactions() {
         />
       </Header>
 
+      <BarraMobile
+        periodo={periodo}
+        opcoesPeriodo={opcoesPeriodo}
+        onTrocarPeriodo={trocarFiltro(setPeriodo)}
+        filtrosAtivos={(categoria ? 1 : 0) + (pagamento ? 1 : 0)}
+        onAbrirFiltros={() => setFiltrosAbertos(true)}
+      />
+
       <ResumoTransacoes
         quantidade={transacoesFiltradas.length}
         receitas={somar("RECEITA")}
@@ -193,6 +216,17 @@ export function Transactions() {
         onApagar={(t) => apagar([t])}
         carregando={carregando}
       />
+
+      {filtrosAbertos && (
+        <SheetFiltros
+          filtros={{ categoria, pagamento, periodo }}
+          opcoesCategoria={opcoesCategoria}
+          opcoesPagamento={opcoesPagamento}
+          opcoesPeriodo={opcoesPeriodo}
+          onAplicar={aplicarFiltros}
+          onFechar={() => setFiltrosAbertos(false)}
+        />
+      )}
 
       {emEdicao && (
         <ModalTransacao

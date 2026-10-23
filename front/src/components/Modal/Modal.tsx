@@ -7,12 +7,14 @@ const FOCAVEIS =
 
 type Props = {
   tituloId: string;
+  variante?: "centro" | "sheet";
   onFechar: () => void;
   children: ReactNode;
 };
 
 export function Modal({
   tituloId,
+  variante = "centro",
   onFechar,
   children,
 }: Props) {
@@ -69,7 +71,7 @@ export function Modal({
 
   return createPortal(
     <div
-      className={styles.overlay}
+      className={`${styles.overlay} ${variante === "sheet" ? styles.overlaySheet : ""}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onFechar();
       }}

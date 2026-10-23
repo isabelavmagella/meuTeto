@@ -76,6 +76,15 @@ export function ResumoTransacoes({
           {selecionadas > 0 && ` (${selecionadas})`}
         </button>
       </div>
+
+      <button
+        type="button"
+        className={styles.fab}
+        aria-label="Adicionar transação"
+        onClick={onAdicionar}
+      >
+        <IconeMais />
+      </button>
     </section>
   );
 }

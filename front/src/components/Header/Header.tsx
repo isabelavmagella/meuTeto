@@ -4,6 +4,7 @@ import styles from "./Header.module.css";
 import { ThemeToggle } from "../ThemeToggle/ThemeToggle";
 import { ABAS } from "./abas";
 import { LogoMeuTeto } from "./Icones";
+import { NavegacaoInferior } from "./NavegacaoInferior";
 
 export function Header({ children }: { children?: ReactNode }) {
   return (
@@ -36,9 +37,11 @@ export function Header({ children }: { children?: ReactNode }) {
       </div>
 
       <div className={styles.headerRight}>
-        {children}
+        <div className={styles.filtros}>{children}</div>
         <ThemeToggle variante="header" />
       </div>
+
+      <NavegacaoInferior />
     </header>
   );
 }
