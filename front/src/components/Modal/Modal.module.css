@@ -30,6 +30,25 @@
   box-sizing: border-box;
 }
 
+.overlaySheet {
+  place-items: end stretch;
+  padding: 0;
+}
+
+.overlaySheet .dialogo {
+  width: 100%;
+  max-height: 85vh;
+  border-radius: 18px 18px 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation-name: deslizar;
+}
+
+@keyframes deslizar {
+  from {
+    transform: translateY(100%);
+  }
+}
+
 @keyframes aparecer {
   from {
     opacity: 0;

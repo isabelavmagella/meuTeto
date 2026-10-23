@@ -18,3 +18,9 @@
 .page *::after {
   box-sizing: border-box;
 }
+
+@media (max-width: 760px) {
+  .page {
+    padding: 10px 10px calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}

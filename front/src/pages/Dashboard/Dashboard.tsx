@@ -14,6 +14,7 @@ import { SaldoMensalChart } from "../../components/Dashboard/SaldoMensalChart";
 import { TopCategorias } from "../../components/Dashboard/TopCategorias";
 import { FiltroSelect } from "../../components/Header/FiltroSelect";
 import { Header } from "../../components/Header/Header";
+import { BarraMobile } from "../../components/Header/BarraMobile";
 import { IconeCalendario } from "../../components/Header/Icones";
 
 export function Dashboard() {
@@ -52,6 +53,12 @@ export function Dashboard() {
           onChange={trocarPeriodo}
         />
       </Header>
+
+      <BarraMobile
+        periodo={periodo}
+        opcoesPeriodo={PERIODOS}
+        onTrocarPeriodo={trocarPeriodo}
+      />
 
       {dados.erro && (
         <AvisoErro
