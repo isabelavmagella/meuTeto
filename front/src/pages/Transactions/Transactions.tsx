@@ -9,6 +9,7 @@ import {
   type Transacao,
 } from "./api";
 import { FiltroSelect } from "../../components/Header/FiltroSelect";
+import { BotaoFiltros } from "../../components/Header/BotaoFiltros";
 import { Header } from "../../components/Header/Header";
 import { BarraMobile } from "../../components/Header/BarraMobile";
 import {
@@ -18,11 +19,7 @@ import {
 import { ResumoTransacoes } from "../../components/Transactions/ResumoTransacoes";
 import { TabelaTransacoes } from "../../components/Transactions/TabelaTransacoes";
 import { ModalTransacao } from "../../components/Transactions/ModalTransacao";
-import {
-  IconeCalendario,
-  IconeCartao,
-  IconeEtiqueta,
-} from "../../components/Header/Icones";
+import { IconeCalendario } from "../../components/Header/Icones";
 
 const POR_PAGINA = 12;
 
@@ -99,6 +96,7 @@ export function Transactions() {
     { valor: "", rotulo: "Todas" },
     ...pagamentos.map((p) => ({ valor: String(p.id), rotulo: p.nome })),
   ];
+  const filtrosAtivos = (categoria ? 1 : 0) + (pagamento ? 1 : 0);
 
   function trocarFiltro(setter: (valor: string) => void) {
     return (valor: string) => {
@@ -160,19 +158,9 @@ export function Transactions() {
   return (
     <div className={styles.page}>
       <Header>
-        <FiltroSelect
-          icone={<IconeEtiqueta />}
-          rotulo="Categoria"
-          valor={categoria}
-          opcoes={opcoesCategoria}
-          onChange={trocarFiltro(setCategoria)}
-        />
-        <FiltroSelect
-          icone={<IconeCartao />}
-          rotulo="Pagamento"
-          valor={pagamento}
-          opcoes={opcoesPagamento}
-          onChange={trocarFiltro(setPagamento)}
+        <BotaoFiltros
+          ativos={filtrosAtivos}
+          onClick={() => setFiltrosAbertos(true)}
         />
         <FiltroSelect
           icone={<IconeCalendario />}
@@ -187,7 +175,7 @@ export function Transactions() {
         periodo={periodo}
         opcoesPeriodo={opcoesPeriodo}
         onTrocarPeriodo={trocarFiltro(setPeriodo)}
-        filtrosAtivos={(categoria ? 1 : 0) + (pagamento ? 1 : 0)}
+        filtrosAtivos={filtrosAtivos}
         onAbrirFiltros={() => setFiltrosAbertos(true)}
       />
 
