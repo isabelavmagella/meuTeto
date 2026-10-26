@@ -47,7 +47,7 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
     const [transacoes, transacoesMesAnterior, orcamentos] = await Promise.all([
       prisma.transaction.findMany({
         where: { userId, ...porVencimento(primeiroDia, ultimoDia) },
-        include: { category: true },
+        include: { category: true, subcategory: true },
       }),
       prisma.transaction.findMany({
         where: {
@@ -64,7 +64,13 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
     let totalReceita = 0;
     let totalDespesa = 0;
     const gastosCategoria: {
-      [key: string]: { nome: string; cor: string; valor: number };
+      [key: string]: {
+        nome: string;
+        cor: string;
+        valor: number;
+        // Só os gastos com subcategoria; o restante é "sem subcategoria".
+        subcategorias: { id: number; nome: string; valor: number }[];
+      };
     } = {};
 
     transacoes.forEach((t) => {
@@ -81,9 +87,21 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
             nome: catNome,
             cor: t.category.cor,
             valor: 0,
+            subcategorias: [],
           };
         }
-        gastosCategoria[catNome].valor += valorNum;
+        const gasto = gastosCategoria[catNome];
+        gasto.valor += valorNum;
+
+        if (!t.subcategory) return;
+        const sub = gasto.subcategorias.find((s) => s.id === t.subcategory!.id);
+        if (sub) sub.valor += valorNum;
+        else
+          gasto.subcategorias.push({
+            id: t.subcategory.id,
+            nome: t.subcategory.nome,
+            valor: valorNum,
+          });
       }
     });
 
