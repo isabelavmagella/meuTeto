@@ -6,6 +6,7 @@ import {
   buscar,
   type Categoria,
   type FormaPagamento,
+  type Subcategoria,
   type Transacao,
 } from "./api";
 import { FiltroSelect } from "../../components/Header/FiltroSelect";
@@ -25,6 +26,7 @@ const POR_PAGINA = 12;
 
 export function Transactions() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [pagamentos, setPagamentos] = useState<FormaPagamento[]>([]);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Transacao | "nova" | null>(null);
@@ -32,6 +34,7 @@ export function Transactions() {
   const [consultaCarregada, setConsultaCarregada] = useState("");
   const [versao, setVersao] = useState(0);
   const [categoria, setCategoria] = useState("");
+  const [subcategoria, setSubcategoria] = useState("");
   const [pagamento, setPagamento] = useState("");
   const [periodo, setPeriodo] = useState(
     PERIODOS[PERIODOS.length - 1]?.valor ?? "",
@@ -44,13 +47,16 @@ export function Transactions() {
     buscar<Categoria>("/categories", controle.signal)
       .then(setCategorias)
       .catch(() => {});
+    buscar<Subcategoria>("/subcategories", controle.signal)
+      .then(setSubcategorias)
+      .catch(() => {});
     buscar<FormaPagamento>("/payments", controle.signal)
       .then(setPagamentos)
       .catch(() => {});
     return () => controle.abort();
   }, []);
 
-  const consulta = `${periodo}|${categoria}|${versao}`;
+  const consulta = `${periodo}|${categoria}|${subcategoria}|${versao}`;
   const carregando = consultaCarregada !== consulta;
 
   useEffect(() => {
@@ -58,15 +64,18 @@ export function Transactions() {
     const params = new URLSearchParams({ por: "vencimento" });
     if (periodo) params.set("mes", periodo);
     if (categoria) params.set("categoria", categoria);
+    if (subcategoria) params.set("subcategoria", subcategoria);
     buscar<Transacao>(`/transactions?${params}`, controle.signal)
       .then((lista) => {
         setTransacoes(lista);
         setSelecionadas(new Set());
-        setConsultaCarregada(`${periodo}|${categoria}|${versao}`);
+        setConsultaCarregada(
+          `${periodo}|${categoria}|${subcategoria}|${versao}`,
+        );
       })
       .catch(() => {});
     return () => controle.abort();
-  }, [periodo, categoria, versao]);
+  }, [periodo, categoria, subcategoria, versao]);
 
   const transacoesFiltradas = pagamento
     ? transacoes.filter((t) => String(t.formaPagamentoId) === pagamento)
@@ -91,12 +100,18 @@ export function Transactions() {
     { valor: "", rotulo: "Todas" },
     ...categorias.map((c) => ({ valor: String(c.id), rotulo: c.nome })),
   ];
+  const opcoesSubcategoria = subcategorias.map((s) => ({
+    valor: String(s.id),
+    rotulo: s.nome,
+    categoria: String(s.categoryId),
+  }));
   const opcoesPeriodo = [{ valor: "", rotulo: "Todos" }, ...PERIODOS];
   const opcoesPagamento = [
     { valor: "", rotulo: "Todas" },
     ...pagamentos.map((p) => ({ valor: String(p.id), rotulo: p.nome })),
   ];
-  const filtrosAtivos = (categoria ? 1 : 0) + (pagamento ? 1 : 0);
+  const filtrosAtivos =
+    (categoria ? 1 : 0) + (subcategoria ? 1 : 0) + (pagamento ? 1 : 0);
 
   function trocarFiltro(setter: (valor: string) => void) {
     return (valor: string) => {
@@ -108,6 +123,7 @@ export function Transactions() {
 
   function aplicarFiltros(filtros: Filtros) {
     setCategoria(filtros.categoria);
+    setSubcategoria(filtros.subcategoria);
     setPagamento(filtros.pagamento);
     setPeriodo(filtros.periodo);
     setPagina(1);
@@ -207,8 +223,9 @@ export function Transactions() {
 
       {filtrosAbertos && (
         <SheetFiltros
-          filtros={{ categoria, pagamento, periodo }}
+          filtros={{ categoria, subcategoria, pagamento, periodo }}
           opcoesCategoria={opcoesCategoria}
+          opcoesSubcategoria={opcoesSubcategoria}
           opcoesPagamento={opcoesPagamento}
           opcoesPeriodo={opcoesPeriodo}
           onAplicar={aplicarFiltros}
@@ -220,6 +237,7 @@ export function Transactions() {
         <ModalTransacao
           transacao={emEdicao === "nova" ? undefined : emEdicao}
           categorias={categorias}
+          subcategorias={subcategorias}
           pagamentos={pagamentos}
           onFechar={() => setEmEdicao(null)}
           onSalvar={() => {

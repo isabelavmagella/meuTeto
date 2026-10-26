@@ -4,6 +4,8 @@ export type Opcao = { id: number; nome: string };
 
 export type Categoria = Opcao & { cor: string };
 
+export type Subcategoria = Opcao & { categoryId: number };
+
 export type FormaPagamento = Opcao & { diaValidade: number | null };
 
 export type NovaTransacao = {
@@ -13,6 +15,7 @@ export type NovaTransacao = {
   data: string;
   totalParcelas?: number;
   categoryId: number | null;
+  subcategoryId: number | null;
   formaPagamentoId?: number;
 };
 
@@ -27,9 +30,11 @@ export type Transacao = {
   parcelaAtual: number | null;
   totalParcelas: number | null;
   categoryId: number | null;
+  subcategoryId: number | null;
   formaPagamentoId: number | null;
   formaPagamento: FormaPagamento | null;
   category: Categoria | null;
+  subcategory: Subcategoria | null;
 };
 
 export { buscar };

@@ -62,22 +62,3 @@
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-
-.comPonto {
-  position: relative;
-}
-
-.comPonto select {
-  padding-left: 28px;
-}
-
-.ponto {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  transform: translateY(-50%);
-  pointer-events: none;
-}

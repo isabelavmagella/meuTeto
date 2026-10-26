@@ -135,6 +135,17 @@ export function TabelaTransacoes({
                           style={{ background: t.category.cor }}
                         />
                         {t.category.nome}
+                        {t.subcategory && (
+                          <>
+                            <span
+                              className={styles.separador}
+                              aria-hidden="true"
+                            >
+                              ›
+                            </span>
+                            {t.subcategory.nome}
+                          </>
+                        )}
                       </span>
                     ) : (
                       "—"

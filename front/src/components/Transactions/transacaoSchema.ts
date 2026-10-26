@@ -8,6 +8,7 @@ export const transacaoSchema = z
     data: z.string().min(1, "Informe a data."),
     totalParcelas: z.string(),
     categoryId: z.string(),
+    subcategoryId: z.string(),
     formaPagamentoId: z.string(),
   })
   .superRefine((dados, ctx) => {

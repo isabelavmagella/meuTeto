@@ -75,6 +75,12 @@
   appearance: none;
 }
 
+.campo select:disabled {
+  background-color: var(--field);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 .campo select:focus {
   outline: none;
   border-color: var(--brand);

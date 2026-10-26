@@ -1,8 +1,8 @@
 import { useId } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import form from "../Modal/Formulario.module.css";
 import styles from "./ModalTransacao.module.css";
+import form from "../Modal/Formulario.module.css";
 import { Modal } from "../Modal/Modal";
 import { transacaoSchema, type TransacaoData } from "./transacaoSchema";
 import { moeda } from "../../pages/Dashboard/formatadores";
@@ -10,12 +10,14 @@ import {
   salvarTransacao,
   type Categoria,
   type FormaPagamento,
+  type Subcategoria,
   type Transacao,
 } from "../../pages/Transactions/api";
 
 type Props = {
   transacao?: Transacao;
   categorias: Categoria[];
+  subcategorias: Subcategoria[];
   pagamentos: FormaPagamento[];
   onFechar: () => void;
   onSalvar: () => void;
@@ -37,6 +39,7 @@ function hoje() {
 export function ModalTransacao({
   transacao,
   categorias: categoriasAtivas,
+  subcategorias: subcategoriasAtivas,
   pagamentos: pagamentosAtivos,
   onFechar,
   onSalvar,
@@ -47,12 +50,14 @@ export function ModalTransacao({
   const totalParcelasAtual = transacao?.totalParcelas ?? 1;
   const parcelada = totalParcelasAtual > 1;
   const categorias = comAtual(categoriasAtivas, transacao?.category);
+  const subcategorias = comAtual(subcategoriasAtivas, transacao?.subcategory);
   const pagamentos = comAtual(pagamentosAtivos, transacao?.formaPagamento);
 
   const {
     register,
     control,
     handleSubmit,
+    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<TransacaoData>({
@@ -67,6 +72,9 @@ export function ModalTransacao({
           data: transacao.data.slice(0, 10),
           totalParcelas: String(totalParcelasAtual),
           categoryId: transacao.categoryId ? String(transacao.categoryId) : "",
+          subcategoryId: transacao.subcategoryId
+            ? String(transacao.subcategoryId)
+            : "",
           formaPagamentoId: transacao.formaPagamentoId
             ? String(transacao.formaPagamentoId)
             : "",
@@ -78,6 +86,7 @@ export function ModalTransacao({
           data: hoje(),
           totalParcelas: "1",
           categoryId: "",
+          subcategoryId: "",
           formaPagamentoId: "",
         },
   });
@@ -88,8 +97,8 @@ export function ModalTransacao({
   });
   const despesa = tipo === "DESPESA";
   const qtdParcelas = despesa ? Number(totalParcelas) : 1;
-  const categoriaEscolhida = categorias.find(
-    (c) => String(c.id) === categoryId,
+  const subcategoriasDaCategoria = subcategorias.filter(
+    (s) => String(s.categoryId) === categoryId,
   );
   const formaEscolhida = pagamentos.find(
     (p) => String(p.id) === formaPagamentoId,
@@ -105,6 +114,10 @@ export function ModalTransacao({
           descricao: dados.descricao,
           data: dados.data,
           categoryId: dados.categoryId ? Number(dados.categoryId) : null,
+          subcategoryId:
+            dados.categoryId && dados.subcategoryId
+              ? Number(dados.subcategoryId)
+              : null,
           ...(dados.tipo === "DESPESA" && {
             formaPagamentoId: Number(dados.formaPagamentoId),
             totalParcelas: editando
@@ -147,11 +160,7 @@ export function ModalTransacao({
 
   return (
     <Modal tituloId={tituloId} onFechar={onFechar}>
-      <form
-        className={form.form}
-        noValidate
-        onSubmit={handleSubmit(onSubmit)}
-      >
+      <form className={form.form} noValidate onSubmit={handleSubmit(onSubmit)}>
         <header className={form.cabecalho}>
           <div>
             <h2 id={tituloId} className={form.titulo}>
@@ -277,26 +286,45 @@ export function ModalTransacao({
             <label htmlFor={`${id}-categoryId`}>
               {despesa ? "Categoria *" : "Categoria"}
             </label>
-            <div className={styles.comPonto}>
-              <span
-                className={styles.ponto}
-                style={{
-                  background: categoriaEscolhida?.cor ?? "var(--border)",
-                }}
-                aria-hidden="true"
-              />
-              <select {...aria("categoryId")} {...register("categoryId")}>
-                <option value="">
-                  {despesa ? "Escolha uma categoria" : "Sem categoria"}
+            <select
+              {...aria("categoryId")}
+              {...register("categoryId", {
+                onChange: () => setValue("subcategoryId", ""),
+              })}
+            >
+              <option value="">
+                {despesa ? "Escolha uma categoria" : "Sem categoria"}
+              </option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
                 </option>
-                {categorias.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
+              ))}
+            </select>
             {erro("categoryId")}
+          </div>
+
+          <div className={form.campo}>
+            <label htmlFor={`${id}-subcategoryId`}>Subcategoria</label>
+            <select
+              {...aria("subcategoryId")}
+              disabled={subcategoriasDaCategoria.length === 0}
+              {...register("subcategoryId")}
+            >
+              <option value="">
+                {!categoryId
+                  ? "Escolha a categoria antes"
+                  : subcategoriasDaCategoria.length === 0
+                    ? "Nenhuma nesta categoria"
+                    : "Sem subcategoria"}
+              </option>
+              {subcategoriasDaCategoria.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nome}
+                </option>
+              ))}
+            </select>
+            {erro("subcategoryId")}
           </div>
 
           {despesa && (
@@ -324,11 +352,7 @@ export function ModalTransacao({
           <button type="button" className={form.cancelar} onClick={onFechar}>
             Cancelar
           </button>
-          <button
-            type="submit"
-            className={form.salvar}
-            disabled={isSubmitting}
-          >
+          <button type="submit" className={form.salvar} disabled={isSubmitting}>
             {isSubmitting
               ? "Salvando…"
               : editando
