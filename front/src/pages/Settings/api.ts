@@ -4,6 +4,8 @@ export { buscar } from "../../lib/api";
 
 export type Categoria = { id: number; nome: string; cor: string };
 
+export type Subcategoria = { id: number; nome: string; categoryId: number };
+
 export type FormaPagamento = {
   id: number;
   nome: string;
@@ -26,6 +28,27 @@ export function apagarCategorias(ids: number[]) {
     "DELETE",
     { ids },
     "Não foi possível apagar as categorias.",
+  );
+}
+
+export function salvarSubcategoria(
+  dados: Omit<Subcategoria, "id">,
+  id?: number,
+) {
+  return enviar(
+    `/subcategories${id ? `/${id}` : ""}`,
+    id ? "PUT" : "POST",
+    dados,
+    "Não foi possível salvar a subcategoria.",
+  );
+}
+
+export function apagarSubcategorias(ids: number[]) {
+  return enviar(
+    "/subcategories",
+    "DELETE",
+    { ids },
+    "Não foi possível apagar as subcategorias.",
   );
 }
 

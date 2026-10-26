@@ -5,36 +5,22 @@ import {
   SecaoCadastro,
   type Coluna,
 } from "../../components/Settings/SecaoCadastro";
+import { TabelaCategorias } from "../../components/Settings/TabelaCategorias";
 import { ModalCategoria } from "../../components/Settings/ModalCategoria";
 import { ModalFormaPagamento } from "../../components/Settings/ModalFormaPagamento";
-import { nomeDaCor } from "../../components/Settings/paleta";
 import {
   apagarCategorias,
   apagarFormasPagamento,
+  apagarSubcategorias,
   buscar,
   type Categoria,
   type FormaPagamento,
+  type Subcategoria,
 } from "./api";
 
 function contar(n: number, singular: string, plural: string) {
   return `${n} ${n === 1 ? singular : plural}`;
 }
-
-const COLUNAS_CATEGORIA: Coluna<Categoria>[] = [
-  { titulo: "Categoria", render: (c) => c.nome, largura: "60%" },
-  {
-    titulo: "Cor",
-    render: (c) => (
-      <span
-        className={styles.cor}
-        style={{ background: c.cor }}
-        role="img"
-        aria-label={nomeDaCor(c.cor)}
-        title={nomeDaCor(c.cor)}
-      />
-    ),
-  },
-];
 
 const COLUNAS_FORMA: Coluna<FormaPagamento>[] = [
   { titulo: "Forma de pagamento", render: (f) => f.nome, largura: "40%" },
@@ -50,6 +36,7 @@ const COLUNAS_FORMA: Coluna<FormaPagamento>[] = [
 
 export function Settings() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [formas, setFormas] = useState<FormaPagamento[]>([]);
   const [versaoCategorias, setVersaoCategorias] = useState(0);
   const [versaoFormas, setVersaoFormas] = useState(0);
@@ -64,9 +51,13 @@ export function Settings() {
 
   useEffect(() => {
     const controle = new AbortController();
-    buscar<Categoria>("/categories", controle.signal)
-      .then((lista) => {
-        setCategorias(lista);
+    Promise.all([
+      buscar<Categoria>("/categories", controle.signal),
+      buscar<Subcategoria>("/subcategories", controle.signal),
+    ])
+      .then(([cats, subs]) => {
+        setCategorias(cats);
+        setSubcategorias(subs);
         setCategoriasCarregadas(versaoCategorias);
       })
       .catch(() => {});
@@ -109,6 +100,43 @@ export function Settings() {
     return true;
   }
 
+  async function apagarDaArvore(cats: Categoria[], subs: Subcategoria[]) {
+    const partes = [
+      cats.length > 0 && contar(cats.length, "categoria", "categorias"),
+      subs.length > 0 && contar(subs.length, "subcategoria", "subcategorias"),
+    ].filter(Boolean);
+    const unica =
+      cats.length + subs.length === 1
+        ? cats[0]
+          ? `a categoria "${cats[0].nome}"`
+          : `a subcategoria "${subs[0]?.nome}"`
+        : null;
+    const avisos = [
+      cats.length > 0 &&
+        "As subcategorias das categorias apagadas também serão apagadas.",
+      "As transações já lançadas continuam com a categoria e a subcategoria.",
+    ].filter(Boolean);
+    if (
+      !window.confirm(
+        `Apagar ${unica ?? partes.join(" e ")}?\n\n${avisos.join(" ")}`,
+      )
+    )
+      return false;
+
+    try {
+      if (subs.length > 0) await apagarSubcategorias(subs.map((s) => s.id));
+      if (cats.length > 0) await apagarCategorias(cats.map((c) => c.id));
+    } catch (err) {
+      window.alert(
+        err instanceof Error ? err.message : "Não foi possível apagar.",
+      );
+      return false;
+    } finally {
+      setVersaoCategorias((v) => v + 1);
+    }
+    return true;
+  }
+
   return (
     <div className={styles.page}>
       <Header />
@@ -121,25 +149,14 @@ export function Settings() {
       </div>
 
       <div className={styles.grade}>
-        <SecaoCadastro
-          titulo="Categorias"
-          contagem={contar(categorias.length, "cadastrada", "cadastradas")}
-          rotuloAdicionar="Adicionar categoria"
-          vazio="Nenhuma categoria cadastrada."
-          itens={categorias}
-          colunas={COLUNAS_CATEGORIA}
+        <TabelaCategorias
+          categorias={categorias}
+          subcategorias={subcategorias}
           carregando={categoriasCarregadas !== versaoCategorias}
           onAdicionar={() => setCategoriaEmEdicao("nova")}
           onEditar={setCategoriaEmEdicao}
-          onApagar={(lista) =>
-            apagar(
-              lista,
-              { singular: "a categoria", plural: "categorias" },
-              "As transações já lançadas continuam com a categoria.",
-              apagarCategorias,
-              () => setVersaoCategorias((v) => v + 1),
-            )
-          }
+          onApagar={apagarDaArvore}
+          onSubcategoriaSalva={() => setVersaoCategorias((v) => v + 1)}
         />
 
         <SecaoCadastro
@@ -165,6 +182,7 @@ export function Settings() {
             )
           }
         />
+
       </div>
 
       {categoriaEmEdicao && (

@@ -1,0 +1,179 @@
+/* Fundo nas células (não na linha) para vencer o zebrado da tabela base. */
+.arvore .categoria td {
+  background: var(--field);
+}
+
+.arvore .sub td,
+.arvore .formulario td {
+  background: var(--surface);
+}
+
+.arvore .selecionada td {
+  background: var(--brand-soft);
+}
+
+.arvore .formulario td {
+  background: var(--field);
+  vertical-align: top;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.ramo {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
+.nome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recuo {
+  padding-left: 32px;
+}
+
+.quantidade {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ponto {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.corSub {
+  color: var(--text-muted) !important;
+}
+
+.expandir {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.expandir:hover {
+  background: var(--meter-empty);
+}
+
+.aberta {
+  transform: rotate(90deg);
+}
+
+.adicionarSub {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-right: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adicionarSub:hover {
+  text-decoration: underline;
+}
+
+.campo {
+  width: 100%;
+  min-width: 180px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  margin-left: 32px;
+  max-width: calc(100% - 32px);
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.campo[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.erro {
+  display: block;
+  margin: 6px 0 0 32px;
+  font-size: 12px;
+  color: var(--danger);
+  white-space: normal;
+}
+
+.botoesForm {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.cancelar,
+.salvar {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cancelar {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.cancelar:hover {
+  background: var(--brand-soft);
+}
+
+.salvar {
+  border: 0;
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.salvar:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+
+.salvar:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.expandir:focus-visible,
+.adicionarSub:focus-visible,
+.cancelar:focus-visible,
+.salvar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
