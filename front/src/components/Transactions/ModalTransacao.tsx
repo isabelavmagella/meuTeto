@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import form from "../Modal/Formulario.module.css";
 import styles from "./ModalTransacao.module.css";
 import { Modal } from "../Modal/Modal";
 import { transacaoSchema, type TransacaoData } from "./transacaoSchema";
@@ -130,7 +131,7 @@ export function ModalTransacao({
   function erro(campo: keyof TransacaoData) {
     const mensagem = errors[campo]?.message;
     return mensagem ? (
-      <p className={styles.erro} id={`${id}-${campo}-erro`}>
+      <p className={form.erro} id={`${id}-${campo}-erro`}>
         {mensagem}
       </p>
     ) : null;
@@ -147,16 +148,16 @@ export function ModalTransacao({
   return (
     <Modal tituloId={tituloId} onFechar={onFechar}>
       <form
-        className={styles.form}
+        className={form.form}
         noValidate
         onSubmit={handleSubmit(onSubmit)}
       >
-        <header className={styles.cabecalho}>
+        <header className={form.cabecalho}>
           <div>
-            <h2 id={tituloId} className={styles.titulo}>
+            <h2 id={tituloId} className={form.titulo}>
               {editando ? "Editar transação" : "Adicionar transação"}
             </h2>
-            <p className={styles.subtitulo}>Campos com * são obrigatórios.</p>
+            <p className={form.subtitulo}>Campos com * são obrigatórios.</p>
             {parcelada && (
               <p className={styles.aviso}>
                 As alterações valem para todas as {totalParcelasAtual} parcelas
@@ -166,7 +167,7 @@ export function ModalTransacao({
           </div>
           <button
             type="button"
-            className={styles.fechar}
+            className={form.fechar}
             aria-label="Fechar"
             onClick={onFechar}
           >
@@ -175,13 +176,13 @@ export function ModalTransacao({
         </header>
 
         {errors.root?.message && (
-          <p className={styles.erroGeral} role="alert">
+          <p className={form.erroGeral} role="alert">
             {errors.root.message}
           </p>
         )}
 
         <fieldset className={styles.tipos}>
-          <legend className={styles.oculto}>Tipo da transação</legend>
+          <legend className={form.oculto}>Tipo da transação</legend>
           <label className={`${styles.tipo} ${styles.tipoReceita}`}>
             <input type="radio" value="RECEITA" {...register("tipo")} />
             <span aria-hidden="true">▲</span> Receita
@@ -192,8 +193,8 @@ export function ModalTransacao({
           </label>
         </fieldset>
 
-        <div className={styles.grade}>
-          <div className={styles.campo}>
+        <div className={form.grade}>
+          <div className={form.campo}>
             <label htmlFor={`${id}-valor`}>
               {qtdParcelas > 1 ? "Valor da parcela *" : "Valor *"}
             </label>
@@ -218,7 +219,7 @@ export function ModalTransacao({
             />
             {erro("valor") ??
               (qtdParcelas > 1 && (
-                <p className={styles.dica}>
+                <p className={form.dica}>
                   {valor > 0
                     ? `${qtdParcelas} × ${moeda.format(valor)} = ${moeda.format(qtdParcelas * valor)}`
                     : "Informe o valor de cada parcela, já com juros."}
@@ -226,7 +227,7 @@ export function ModalTransacao({
               ))}
           </div>
 
-          <div className={styles.campo}>
+          <div className={form.campo}>
             <label htmlFor={`${id}-descricao`}>Descrição *</label>
             <input
               {...aria("descricao")}
@@ -236,7 +237,7 @@ export function ModalTransacao({
             {erro("descricao")}
           </div>
 
-          <div className={styles.campo}>
+          <div className={form.campo}>
             <label htmlFor={`${id}-data`}>
               {despesa ? "Data da compra *" : "Data do recebimento *"}
             </label>
@@ -245,7 +246,7 @@ export function ModalTransacao({
           </div>
 
           {despesa && (
-            <div className={styles.campo}>
+            <div className={form.campo}>
               <label htmlFor={`${id}-totalParcelas`}>Total de parcelas</label>
               <select
                 {...aria("totalParcelas")}
@@ -259,12 +260,12 @@ export function ModalTransacao({
                 ))}
               </select>
               {editando ? (
-                <p className={styles.dica}>
+                <p className={form.dica}>
                   Pra mudar as parcelas, apague e lance de novo.
                 </p>
               ) : (
                 !podeParcelar && (
-                  <p className={styles.dica}>
+                  <p className={form.dica}>
                     Só dá pra parcelar em formas com dia de vencimento.
                   </p>
                 )
@@ -272,7 +273,7 @@ export function ModalTransacao({
             </div>
           )}
 
-          <div className={styles.campo}>
+          <div className={form.campo}>
             <label htmlFor={`${id}-categoryId`}>
               {despesa ? "Categoria *" : "Categoria"}
             </label>
@@ -299,7 +300,7 @@ export function ModalTransacao({
           </div>
 
           {despesa && (
-            <div className={styles.campo}>
+            <div className={form.campo}>
               <label htmlFor={`${id}-formaPagamentoId`}>
                 Forma de pagamento *
               </label>
@@ -319,13 +320,13 @@ export function ModalTransacao({
           )}
         </div>
 
-        <footer className={styles.rodape}>
-          <button type="button" className={styles.cancelar} onClick={onFechar}>
+        <footer className={form.rodape}>
+          <button type="button" className={form.cancelar} onClick={onFechar}>
             Cancelar
           </button>
           <button
             type="submit"
-            className={styles.salvar}
+            className={form.salvar}
             disabled={isSubmitting}
           >
             {isSubmitting
