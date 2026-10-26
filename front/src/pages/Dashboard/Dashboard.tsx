@@ -124,6 +124,7 @@ export function Dashboard() {
         carregando={dados.carregando}
       >
         <DistribuicaoGastos
+          key={periodo}
           categorias={categorias}
           totalDespesa={despesa.valor}
           rotuloPeriodo={rotuloPeriodo}

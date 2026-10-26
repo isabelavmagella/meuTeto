@@ -6,6 +6,15 @@ export type Mes = {
   saldoFinal: number;
 };
 
+// `subcategorias` traz só os gastos com subcategoria; o que faltar para
+// chegar em `valor` é gasto sem subcategoria.
+export type GastoCategoria = {
+  nome: string;
+  cor: string;
+  valor: number;
+  subcategorias: { id: number; nome: string; valor: number }[];
+};
+
 export type ResumoMensal = {
   kpis: {
     receita: {
@@ -24,7 +33,7 @@ export type ResumoMensal = {
       diferencaPorcentagem: number;
     };
   };
-  despesaPorCategoria: { nome: string; cor: string; valor: number }[];
+  despesaPorCategoria: GastoCategoria[];
   comparacaoOrcamento: {
     nomeCategoria: string;
     corCategoria: string;
