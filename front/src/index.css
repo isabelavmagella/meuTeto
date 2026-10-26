@@ -10,6 +10,9 @@
   --hero-border: #4a49a0;
   --hero-ink-muted: #c9c9ee;
   --hero-active-ink: #2d2e83;
+  --table-head-bg: #2d2e83;
+  --table-head-ink: #ffffff;
+  --table-head-line: #f5b400;
   --surface: #ffffff;
   --field: #f7f7fb;
   --text: #16173a;
@@ -52,6 +55,9 @@
   --hero-border: #4a4c53;
   --hero-ink-muted: #b3b4ba;
   --hero-active-ink: #1c1d20;
+  --table-head-bg: #3a3c42;
+  --table-head-ink: #fffafa;
+  --table-head-line: #75777e;
   --surface: #1c1d20;
   --field: #26272b;
   --text: #fffafa;
@@ -86,6 +92,9 @@
     --hero-border: #4a4c53;
     --hero-ink-muted: #b3b4ba;
     --hero-active-ink: #1c1d20;
+    --table-head-bg: #3a3c42;
+    --table-head-ink: #fffafa;
+    --table-head-line: #75777e;
     --surface: #1c1d20;
     --field: #26272b;
     --text: #fffafa;
