@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
-import { inteiroPositivo, validarDiasCartao } from "../utils/validacao.js";
+import {
+  inteiroPositivo,
+  normalizarNome,
+  validarDiasCartao,
+} from "../utils/validacao.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
 
@@ -29,9 +33,11 @@ router.post("/", autenticar, async (req, res) => {
     return res.status(400).json({ error: dias.error });
   }
 
+  const nomeNormalizado = normalizarNome(nomeLimpo);
+
   try {
     const arquivada = await prisma.formaPagamento.findUnique({
-      where: { nome_userId: { nome: nomeLimpo, userId } },
+      where: { userId_nomeNormalizado: { userId, nomeNormalizado } },
     });
 
     if (arquivada && !arquivada.ativo) {
@@ -39,6 +45,7 @@ router.post("/", autenticar, async (req, res) => {
         where: { id: arquivada.id },
         data: {
           ativo: true,
+          nome: nomeLimpo,
           diaValidade: dias.diaValidade,
           diaFechamento: dias.diaFechamento,
         },
@@ -49,6 +56,7 @@ router.post("/", autenticar, async (req, res) => {
     const formaPagamento = await prisma.formaPagamento.create({
       data: {
         nome: nomeLimpo,
+        nomeNormalizado,
         diaValidade: dias.diaValidade,
         diaFechamento: dias.diaFechamento,
         userId,
@@ -164,6 +172,7 @@ router.put("/:id", autenticar, async (req, res) => {
       where: { id_userId: { id, userId } },
       data: {
         nome: nomeLimpo,
+        nomeNormalizado: normalizarNome(nomeLimpo),
         diaValidade: dias.diaValidade,
         diaFechamento: dias.diaFechamento,
       },
