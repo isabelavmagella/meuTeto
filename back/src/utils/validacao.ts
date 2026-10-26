@@ -7,6 +7,10 @@ export function inteiroPositivo(v: unknown): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+export function normalizarNome(nome: string): string {
+  return nome.trim().toLocaleLowerCase("pt-BR");
+}
+
 export const mesmoDia = (a: Date, b: Date) =>
     a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
 

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
-import { inteiroPositivo } from "../utils/validacao.js";
+import { inteiroPositivo, normalizarNome } from "../utils/validacao.js";
 
 const MSG_CATEGORIA_DUPLICADO =
   "Já existe uma categoria com esse nome ou essa cor (pode estar arquivada).";
@@ -25,9 +25,11 @@ router.post("/", autenticar, async (req, res) => {
       .json({ error: "Preencha todos os campos obrigatórios." });
   }
 
+  const nomeNormalizado = normalizarNome(nomeLimpo);
+
   try {
     const arquivada = await prisma.category.findUnique({
-      where: { nome_userId: { nome: nomeLimpo, userId } },
+      where: { userId_nomeNormalizado: { userId, nomeNormalizado } },
     });
 
     if (arquivada && !arquivada.ativo) {
@@ -35,6 +37,7 @@ router.post("/", autenticar, async (req, res) => {
         where: { id: arquivada.id },
         data: {
           ativo: true,
+          nome: nomeLimpo,
           cor: corLimpa,
         },
       });
@@ -44,6 +47,7 @@ router.post("/", autenticar, async (req, res) => {
     const categoria = await prisma.category.create({
       data: {
         nome: nomeLimpo,
+        nomeNormalizado,
         cor: corLimpa,
         userId,
       },
@@ -80,10 +84,16 @@ router.delete("/:id", autenticar, async (req, res) => {
       return res.status(404).json({ error: "Categoria não encontrada." });
     }
 
-    await prisma.category.update({
-      where: { id_userId: { id, userId } },
-      data: { ativo: false },
-    });
+    await prisma.$transaction([
+      prisma.category.update({
+        where: { id_userId: { id, userId } },
+        data: { ativo: false },
+      }),
+      prisma.subcategory.updateMany({
+        where: { userId, categoryId: id },
+        data: { ativo: false },
+      }),
+    ]);
 
     return res.status(204).send();
   } catch (err) {
@@ -148,6 +158,7 @@ router.put("/:id", autenticar, async (req, res) => {
       where: { id_userId: { id, userId } },
       data: {
         nome: nomeLimpo,
+        nomeNormalizado: normalizarNome(nomeLimpo),
         cor: corLimpa,
       },
     });
@@ -181,15 +192,26 @@ router.delete("/", autenticar, async (req, res) => {
   }
 
   try {
-    const { count } = await prisma.category.updateMany({
-      where: {
-        userId,
-        id: { in: idsValidos as number[] },
-      },
-      data: {
-        ativo: false,
-      },
-    });
+    const [{ count }] = await prisma.$transaction([
+      prisma.category.updateMany({
+        where: {
+          userId,
+          id: { in: idsValidos as number[] },
+        },
+        data: {
+          ativo: false,
+        },
+      }),
+      prisma.subcategory.updateMany({
+        where: {
+          userId,
+          categoryId: { in: idsValidos as number[] },
+        },
+        data: {
+          ativo: false,
+        },
+      }),
+    ]);
 
     return res.json({ excluidas: count });
   } catch (err) {
