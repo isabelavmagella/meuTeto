@@ -6,6 +6,15 @@ export type Categoria = { id: number; nome: string; cor: string };
 
 export type Subcategoria = { id: number; nome: string; categoryId: number };
 
+// `mes` vem como data ISO do 1º dia do mês; `valorLimite` é Decimal (string).
+export type Orcamento = {
+  id: number;
+  mes: string;
+  valorLimite: string;
+  categoryId: number;
+  category: Categoria;
+};
+
 export type FormaPagamento = {
   id: number;
   nome: string;
@@ -49,6 +58,27 @@ export function apagarSubcategorias(ids: number[]) {
     "DELETE",
     { ids },
     "Não foi possível apagar as subcategorias.",
+  );
+}
+
+export function salvarOrcamento(
+  dados: { mesAno: string; valorLimite: number; categoryId: number },
+  id?: number,
+) {
+  return enviar(
+    `/budgets${id ? `/${id}` : ""}`,
+    id ? "PUT" : "POST",
+    dados,
+    "Não foi possível salvar o orçamento.",
+  );
+}
+
+export function apagarOrcamentos(ids: number[]) {
+  return enviar(
+    "/budgets",
+    "DELETE",
+    { ids },
+    "Não foi possível apagar os orçamentos.",
   );
 }
 

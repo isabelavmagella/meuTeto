@@ -8,13 +8,17 @@ import {
 import { TabelaCategorias } from "../../components/Settings/TabelaCategorias";
 import { ModalCategoria } from "../../components/Settings/ModalCategoria";
 import { ModalFormaPagamento } from "../../components/Settings/ModalFormaPagamento";
+import { ModalOrcamento } from "../../components/Settings/ModalOrcamento";
+import { capitalizar, moeda, nomeDoMes } from "../Dashboard/formatadores";
 import {
   apagarCategorias,
   apagarFormasPagamento,
+  apagarOrcamentos,
   apagarSubcategorias,
   buscar,
   type Categoria,
   type FormaPagamento,
+  type Orcamento,
   type Subcategoria,
 } from "./api";
 
@@ -34,10 +38,49 @@ const COLUNAS_FORMA: Coluna<FormaPagamento>[] = [
   },
 ];
 
+type LinhaOrcamento = Orcamento & { nome: string };
+
+function nomeDoMesAno(mes: string) {
+  const [ano, numero] = mes.slice(0, 7).split("-").map(Number);
+  return `${capitalizar(nomeDoMes(ano, numero))} ${ano}`;
+}
+
+const COLUNAS_ORCAMENTO: Coluna<LinhaOrcamento>[] = [
+  {
+    titulo: "Categoria",
+    render: (o) => (
+      <span className={styles.categoria}>
+        <span
+          className={styles.ponto}
+          style={{ background: o.category.cor }}
+          aria-hidden="true"
+        />
+        {o.category.nome}
+      </span>
+    ),
+    largura: "40%",
+  },
+  { titulo: "Mês", render: (o) => nomeDoMesAno(o.mes) },
+  {
+    titulo: "Valor limite",
+    render: (o) => (
+      <strong className={styles.valor}>
+        {moeda.format(Number(o.valorLimite))}
+      </strong>
+    ),
+  },
+];
+
 export function Settings() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [formas, setFormas] = useState<FormaPagamento[]>([]);
+  const [orcamentos, setOrcamentos] = useState<LinhaOrcamento[]>([]);
+  const [versaoOrcamentos, setVersaoOrcamentos] = useState(0);
+  const [orcamentosCarregados, setOrcamentosCarregados] = useState(-1);
+  const [orcamentoEmEdicao, setOrcamentoEmEdicao] = useState<
+    Orcamento | "novo" | null
+  >(null);
   const [versaoCategorias, setVersaoCategorias] = useState(0);
   const [versaoFormas, setVersaoFormas] = useState(0);
   const [categoriasCarregadas, setCategoriasCarregadas] = useState(-1);
@@ -74,6 +117,23 @@ export function Settings() {
       .catch(() => {});
     return () => controle.abort();
   }, [versaoFormas]);
+
+  // Recarrega também quando as categorias mudam, pra refletir nome e cor.
+  useEffect(() => {
+    const controle = new AbortController();
+    buscar<Orcamento>("/budgets", controle.signal)
+      .then((lista) => {
+        setOrcamentos(
+          lista.map((o) => ({
+            ...o,
+            nome: `${o.category.nome} (${nomeDoMesAno(o.mes)})`,
+          })),
+        );
+        setOrcamentosCarregados(versaoOrcamentos);
+      })
+      .catch(() => {});
+    return () => controle.abort();
+  }, [versaoOrcamentos, versaoCategorias]);
 
   async function apagar<T extends { id: number; nome: string }>(
     lista: T[],
@@ -144,7 +204,8 @@ export function Settings() {
       <div className={styles.intro}>
         <h1>Configurações</h1>
         <p>
-          Gerencie as categorias e as formas de pagamento usadas nas transações.
+          Gerencie as categorias, as formas de pagamento e os orçamentos
+          mensais.
         </p>
       </div>
 
@@ -183,6 +244,26 @@ export function Settings() {
           }
         />
 
+        <SecaoCadastro
+          titulo="Orçamentos"
+          contagem={contar(orcamentos.length, "cadastrado", "cadastrados")}
+          rotuloAdicionar="Adicionar orçamento"
+          vazio="Nenhum orçamento cadastrado."
+          itens={orcamentos}
+          colunas={COLUNAS_ORCAMENTO}
+          carregando={orcamentosCarregados !== versaoOrcamentos}
+          onAdicionar={() => setOrcamentoEmEdicao("novo")}
+          onEditar={setOrcamentoEmEdicao}
+          onApagar={(lista) =>
+            apagar(
+              lista,
+              { singular: "o orçamento", plural: "orçamentos" },
+              "Os gastos da categoria não são apagados.",
+              apagarOrcamentos,
+              () => setVersaoOrcamentos((v) => v + 1),
+            )
+          }
+        />
       </div>
 
       {categoriaEmEdicao && (
@@ -195,6 +276,20 @@ export function Settings() {
           onSalvar={() => {
             setCategoriaEmEdicao(null);
             setVersaoCategorias((v) => v + 1);
+          }}
+        />
+      )}
+
+      {orcamentoEmEdicao && (
+        <ModalOrcamento
+          orcamento={
+            orcamentoEmEdicao === "novo" ? undefined : orcamentoEmEdicao
+          }
+          categorias={categorias}
+          onFechar={() => setOrcamentoEmEdicao(null)}
+          onSalvar={() => {
+            setOrcamentoEmEdicao(null);
+            setVersaoOrcamentos((v) => v + 1);
           }}
         />
       )}
