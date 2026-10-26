@@ -7,8 +7,34 @@ import { dataNoMes, vencimentoPrimeiraParcela } from "../utils/datas.js";
 
 const MSG_PARCELA_SEM_VENCIMENTO =
   "Compras parceladas exigem uma forma de pagamento com dia de vencimento.";
+const MSG_SUBCATEGORIA_INVALIDA = "Subcategoria inválida.";
+const MSG_SUBCATEGORIA_SEM_CATEGORIA =
+  "Informe a categoria para usar uma subcategoria.";
+const MSG_SUBCATEGORIA_NAO_ENCONTRADA = "Subcategoria não encontrada.";
+const MSG_SUBCATEGORIA_DE_OUTRA_CATEGORIA =
+  "A subcategoria não pertence à categoria informada.";
+const MSG_SUBCATEGORIA_REMOVIDA =
+  "A subcategoria foi removida porque a categoria da transação mudou.";
 
 const router = Router();
+
+async function validarSubcategoria(
+  id: number,
+  categoria: number,
+  userId: number,
+  exigirAtiva: boolean,
+) {
+  const subcategoria = await prisma.subcategory.findUnique({
+    where: { id_userId: { id, userId } },
+  });
+  if (!subcategoria || (exigirAtiva && !subcategoria.ativo)) {
+    return { status: 404, error: MSG_SUBCATEGORIA_NAO_ENCONTRADA };
+  }
+  if (subcategoria.categoryId !== categoria) {
+    return { status: 400, error: MSG_SUBCATEGORIA_DE_OUTRA_CATEGORIA };
+  }
+  return null;
+}
 
 router.post("/", autenticar, async (req, res) => {
   const {
@@ -18,6 +44,7 @@ router.post("/", autenticar, async (req, res) => {
     data,
     totalParcelas,
     categoryId,
+    subcategoryId,
     formaPagamentoId,
   } = req.body;
   const userId = req.user?.id;
@@ -58,6 +85,17 @@ router.post("/", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Informe a categoria." });
   }
 
+  let subcategoria: number | null = null;
+  if (subcategoryId != null && subcategoryId !== "") {
+    subcategoria = inteiroPositivo(subcategoryId);
+    if (!subcategoria) {
+      return res.status(400).json({ error: MSG_SUBCATEGORIA_INVALIDA });
+    }
+    if (!categoria) {
+      return res.status(400).json({ error: MSG_SUBCATEGORIA_SEM_CATEGORIA });
+    }
+  }
+
   let formaPagamento: number | null = null;
   if (formaPagamentoId != null && formaPagamentoId !== "") {
     formaPagamento = inteiroPositivo(formaPagamentoId);
@@ -88,6 +126,7 @@ router.post("/", autenticar, async (req, res) => {
     descricao: descricao.trim(),
     data: dataConvertida,
     categoryId: categoria,
+    subcategoryId: subcategoria,
     formaPagamentoId: formaPagamento,
     userId,
   };
@@ -127,6 +166,16 @@ router.post("/", autenticar, async (req, res) => {
 
     if (categoria && (!categoriaExiste || !categoriaExiste.ativo)) {
       return res.status(400).json({ error: "Categoria inválida." });
+    }
+
+    if (subcategoria) {
+      const erro = await validarSubcategoria(
+        subcategoria,
+        categoria!,
+        userId,
+        true,
+      );
+      if (erro) return res.status(erro.status).json({ error: erro.error });
     }
 
     if (parcelas === 1) {
@@ -170,6 +219,7 @@ router.get("/", autenticar, async (req, res) => {
     mes: mesParam,
     tipo: tipoParam,
     categoria: categoryParam,
+    subcategoria: subcategoryParam,
     por: porParam,
   } = req.query;
 
@@ -223,11 +273,25 @@ router.get("/", autenticar, async (req, res) => {
       filtro.categoryId = Number(categoryParam);
     }
 
+    if (subcategoryParam) {
+      const subcategoria = inteiroPositivo(subcategoryParam);
+      const sub = subcategoria
+        ? await prisma.subcategory.findUnique({
+            where: { id_userId: { id: subcategoria, userId } },
+          })
+        : null;
+      if (!sub) {
+        return res.status(400).json({ error: MSG_SUBCATEGORIA_INVALIDA });
+      }
+      filtro.subcategoryId = sub.id;
+    }
+
     const transacoes = await prisma.transaction.findMany({
       where: filtro,
       include: {
         formaPagamento: true,
         category: true,
+        subcategory: true,
       },
       orderBy:
         por === "vencimento"
@@ -283,6 +347,7 @@ router.put("/:id", autenticar, async (req, res) => {
     descricao,
     data,
     categoryId,
+    subcategoryId,
     formaPagamentoId,
     totalParcelas,
   } = req.body;
@@ -328,6 +393,20 @@ router.put("/:id", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Informe a categoria." });
   }
 
+  let subcategoria: number | null | undefined;
+  if (subcategoryId === null || subcategoryId === "") {
+    subcategoria = null;
+  } else if (subcategoryId !== undefined) {
+    const n = inteiroPositivo(subcategoryId);
+    if (!n) {
+      return res.status(400).json({ error: MSG_SUBCATEGORIA_INVALIDA });
+    }
+    if (!categoria) {
+      return res.status(400).json({ error: MSG_SUBCATEGORIA_SEM_CATEGORIA });
+    }
+    subcategoria = n;
+  }
+
   let formaPagamento: number | null = null;
   if (formaPagamentoId != null && formaPagamentoId !== "") {
     formaPagamento = inteiroPositivo(formaPagamentoId);
@@ -352,6 +431,7 @@ router.put("/:id", autenticar, async (req, res) => {
         data: true,
         formaPagamentoId: true,
         categoryId: true,
+        subcategoryId: true,
       },
     });
 
@@ -395,6 +475,25 @@ router.put("/:id", autenticar, async (req, res) => {
       return res.status(400).json({ error: "Categoria inválida." });
     }
 
+    let subcategoriaFinal = atual.subcategoryId;
+    let aviso: string | undefined;
+    if (subcategoria !== undefined) {
+      subcategoriaFinal = subcategoria;
+    } else if (mudouCategoria && atual.subcategoryId !== null) {
+      subcategoriaFinal = null;
+      aviso = MSG_SUBCATEGORIA_REMOVIDA;
+    }
+
+    if (subcategoria) {
+      const erro = await validarSubcategoria(
+        subcategoria,
+        categoria!,
+        userId,
+        subcategoria !== atual.subcategoryId,
+      );
+      if (erro) return res.status(erro.status).json({ error: erro.error });
+    }
+
     const where = atual.parcelamentoId
       ? { parcelamentoId: atual.parcelamentoId, userId }
       : { id, userId };
@@ -405,6 +504,7 @@ router.put("/:id", autenticar, async (req, res) => {
       descricao: descricao.trim(),
       data: dataConvertida,
       categoryId: categoria,
+      subcategoryId: subcategoriaFinal,
       formaPagamentoId: formaPagamento,
     };
 
@@ -438,11 +538,13 @@ router.put("/:id", autenticar, async (req, res) => {
 
     const atualizadas = await prisma.transaction.findMany({
       where,
-      include: { formaPagamento: true, category: true },
+      include: { formaPagamento: true, category: true, subcategory: true },
       orderBy: { parcelaAtual: "asc" },
     });
 
-    return res.json(atualizadas);
+    return res.json(
+      aviso ? atualizadas.map((t) => ({ ...t, aviso })) : atualizadas,
+    );
   } catch (err: any) {
     if (err?.code === "P2003") {
       return res
