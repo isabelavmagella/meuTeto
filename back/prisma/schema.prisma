@@ -23,6 +23,8 @@ model User {
   formasPagamento FormaPagamento[]
   transactions    Transaction[]
   budgets         Budget[]
+
+  transacoesRecorrentes TransacaoRecorrente[]
 }
 
 model Category {
@@ -38,6 +40,8 @@ model Category {
   transactions  Transaction[]
   budgets       Budget[]
   subcategories Subcategory[]
+
+  transacoesRecorrentes TransacaoRecorrente[]
 
   @@unique([cor, userId])
   @@unique([userId, nomeNormalizado])
@@ -57,6 +61,8 @@ model Subcategory {
 
   transactions Transaction[]
 
+  transacoesRecorrentes TransacaoRecorrente[]
+
   @@unique([userId, categoryId, nomeNormalizado])
   @@unique([id, userId])
   @@index([categoryId, userId])
@@ -74,6 +80,8 @@ model FormaPagamento {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_formaPagamento_userId")
 
   transactions Transaction[]
+
+  transacoesRecorrentes TransacaoRecorrente[]
 
   @@unique([id, userId])
   @@unique([userId, nomeNormalizado])
@@ -94,12 +102,20 @@ model Transaction {
   userId           Int
   formaPagamentoId Int?
   dataVencimento   DateTime? @db.Date
+  // Preenchidos só nas transações geradas por uma TransacaoRecorrente.
+  recorrenciaId    Int?
+  // 1º dia do mês que originou o lançamento. A unicidade usa este campo (e
+  // não `data`) para que editar a data de uma transação gerada não a recrie.
+  competencia      DateTime? @db.Date
 
-  category       Category?       @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_categoryId")
-  subcategory    Subcategory?    @relation(fields: [subcategoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_subcategoryId")
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transaction_userId")
-  formaPagamento FormaPagamento? @relation(fields: [formaPagamentoId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_formaPagamentoId")
+  category       Category?            @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_categoryId")
+  subcategory    Subcategory?         @relation(fields: [subcategoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_subcategoryId")
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transaction_userId")
+  formaPagamento FormaPagamento?      @relation(fields: [formaPagamentoId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_formaPagamentoId")
+  recorrencia    TransacaoRecorrente? @relation(fields: [recorrenciaId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_recorrenciaId")
 
+  @@unique([recorrenciaId, competencia])
+  @@index([recorrenciaId, userId])
   @@index([userId, data])
   @@index([formaPagamentoId, userId])
   @@index([categoryId, userId])
@@ -120,4 +136,36 @@ model Budget {
 
   @@unique([userId, mes, categoryId])
   @@index([categoryId, userId])
+}
+
+// Regra de lançamento mensal (aluguel, assinatura, salário). As transações são
+// geradas pela função SQL gerar_transacoes_recorrentes (ver a migration).
+model TransacaoRecorrente {
+  id                Int       @id @default(autoincrement())
+  tipo              Tipo
+  valor             Decimal   @db.Decimal(12, 2)
+  descricao         String
+  diaDoMes          Int
+  dataInicio        DateTime  @db.Date
+  // null = sem fim
+  dataFim           DateTime? @db.Date
+  ativo             Boolean   @default(true)
+  // Última competência já processada pela função. Ela só gera meses depois
+  // desta, então apagar uma transação gerada não faz o job recriá-la.
+  ultimaCompetencia DateTime? @db.Date
+  categoryId        Int?
+  subcategoryId     Int?
+  formaPagamentoId  Int?
+  userId            Int
+  createdAt         DateTime  @default(now())
+
+  category       Category?       @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transacaoRecorrente_categoryId")
+  subcategory    Subcategory?    @relation(fields: [subcategoryId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transacaoRecorrente_subcategoryId")
+  formaPagamento FormaPagamento? @relation(fields: [formaPagamentoId, userId], references: [id, userId], onDelete: NoAction, onUpdate: NoAction, map: "fk_transacaoRecorrente_formaPagamentoId")
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transacaoRecorrente_userId")
+
+  transacoes Transaction[]
+
+  @@unique([id, userId])
+  @@index([userId, ativo])
 }
