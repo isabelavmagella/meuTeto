@@ -4,6 +4,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import paymentsRoutes from "./routes/payments.js";
 import transactionsRoutes from "./routes/transactions.js";
+import recurringTransactionsRoutes from "./routes/recurringTransactions.js";
 import categoriesRoutes from "./routes/categories.js";
 import subcategoriesRoutes from "./routes/subcategories.js";
 import budgetRoutes from "./routes/budget.js";
@@ -18,6 +19,7 @@ app.use("/api/payments", paymentsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/subcategories", subcategoriesRoutes);
 app.use("/api/transactions", transactionsRoutes);
+app.use("/api/recurring-transactions", recurringTransactionsRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 

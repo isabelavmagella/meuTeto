@@ -31,6 +31,18 @@ export function vencimentoPrimeiraParcela(
   return dataNoMes(fechamento, mesesAteVencimento, diaValidade);
 }
 
+// "AAAA-MM-DD" (ou o ISO que a API devolve) → meia-noite UTC, como as colunas @db.Date.
+export function dataDoDia(valor: unknown): Date | null {
+  if (typeof valor !== "string") return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.000)?Z)?$/.exec(valor);
+  if (!m) return null;
+  const [ano, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const data = new Date(Date.UTC(ano, mes - 1, dia));
+  return data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia
+    ? data
+    : null;
+}
+
 export function primeiroDiaDoMes(mesAno: unknown): Date | null {
   if (typeof mesAno !== "string" || !/^\d{4}-\d{2}$/.test(mesAno)) return null;
   const [ano, mes] = mesAno.split("-").map(Number) as [number, number];
