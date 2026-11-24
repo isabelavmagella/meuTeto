@@ -9,17 +9,20 @@ import { TabelaCategorias } from "../../components/Settings/TabelaCategorias";
 import { ModalCategoria } from "../../components/Settings/ModalCategoria";
 import { ModalFormaPagamento } from "../../components/Settings/ModalFormaPagamento";
 import { ModalOrcamento } from "../../components/Settings/ModalOrcamento";
+import { ModalRecorrencia } from "../../components/Settings/ModalRecorrencia";
 import { capitalizar, moeda, nomeDoMes } from "../Dashboard/formatadores";
 import {
   apagarCategorias,
   apagarFormasPagamento,
   apagarOrcamentos,
+  apagarRecorrencias,
   apagarSubcategorias,
   buscar,
   type Categoria,
   type FormaPagamento,
   type Orcamento,
   type Subcategoria,
+  type TransacaoRecorrente,
 } from "./api";
 
 function contar(n: number, singular: string, plural: string) {
@@ -71,6 +74,46 @@ const COLUNAS_ORCAMENTO: Coluna<LinhaOrcamento>[] = [
   },
 ];
 
+type LinhaRecorrencia = TransacaoRecorrente & { nome: string };
+
+const COLUNAS_RECORRENCIA: Coluna<LinhaRecorrencia>[] = [
+  {
+    titulo: "Descrição",
+    render: (r) => (
+      <span className={styles.categoria}>
+        <span
+          className={styles.ponto}
+          style={{ background: r.category?.cor ?? "var(--border-strong)" }}
+          aria-hidden="true"
+        />
+        {r.descricao}
+      </span>
+    ),
+    largura: "40%",
+  },
+  {
+    titulo: "Categoria",
+    render: (r) =>
+      r.category
+        ? r.subcategory
+          ? `${r.category.nome} › ${r.subcategory.nome}`
+          : r.category.nome
+        : "—",
+  },
+  { titulo: "Todo dia", render: (r) => `Dia ${r.diaDoMes}` },
+  {
+    titulo: "Valor",
+    render: (r) => (
+      <strong
+        className={`${styles.valor} ${r.tipo === "RECEITA" ? styles.receita : ""}`}
+      >
+        {r.tipo === "RECEITA" ? "+ " : ""}
+        {moeda.format(Number(r.valor))}
+      </strong>
+    ),
+  },
+];
+
 export function Settings() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
@@ -80,6 +123,12 @@ export function Settings() {
   const [orcamentosCarregados, setOrcamentosCarregados] = useState(-1);
   const [orcamentoEmEdicao, setOrcamentoEmEdicao] = useState<
     Orcamento | "novo" | null
+  >(null);
+  const [recorrencias, setRecorrencias] = useState<LinhaRecorrencia[]>([]);
+  const [versaoRecorrencias, setVersaoRecorrencias] = useState(0);
+  const [recorrenciasCarregadas, setRecorrenciasCarregadas] = useState(-1);
+  const [recorrenciaEmEdicao, setRecorrenciaEmEdicao] = useState<
+    TransacaoRecorrente | "nova" | null
   >(null);
   const [versaoCategorias, setVersaoCategorias] = useState(0);
   const [versaoFormas, setVersaoFormas] = useState(0);
@@ -134,6 +183,18 @@ export function Settings() {
       .catch(() => {});
     return () => controle.abort();
   }, [versaoOrcamentos, versaoCategorias]);
+
+  // Recarrega também quando categorias ou formas mudam, pra refletir nome e cor.
+  useEffect(() => {
+    const controle = new AbortController();
+    buscar<TransacaoRecorrente>("/recurring-transactions", controle.signal)
+      .then((lista) => {
+        setRecorrencias(lista.map((r) => ({ ...r, nome: r.descricao })));
+        setRecorrenciasCarregadas(versaoRecorrencias);
+      })
+      .catch(() => {});
+    return () => controle.abort();
+  }, [versaoRecorrencias, versaoCategorias, versaoFormas]);
 
   async function apagar<T extends { id: number; nome: string }>(
     lista: T[],
@@ -204,8 +265,8 @@ export function Settings() {
       <div className={styles.intro}>
         <h1>Configurações</h1>
         <p>
-          Gerencie as categorias, as formas de pagamento e os orçamentos
-          mensais.
+          Gerencie as categorias, as formas de pagamento, os orçamentos mensais
+          e as transações recorrentes.
         </p>
       </div>
 
@@ -264,6 +325,30 @@ export function Settings() {
             )
           }
         />
+
+        <SecaoCadastro
+          titulo="Transações recorrentes"
+          contagem={contar(recorrencias.length, "cadastrada", "cadastradas")}
+          rotuloAdicionar="Adicionar recorrência"
+          vazio="Nenhuma transação recorrente cadastrada."
+          itens={recorrencias}
+          colunas={COLUNAS_RECORRENCIA}
+          carregando={recorrenciasCarregadas !== versaoRecorrencias}
+          onAdicionar={() => setRecorrenciaEmEdicao("nova")}
+          onEditar={setRecorrenciaEmEdicao}
+          onApagar={(lista) =>
+            apagar(
+              lista,
+              {
+                singular: "a transação recorrente",
+                plural: "transações recorrentes",
+              },
+              "Ela para de lançar nos próximos meses. As transações já lançadas continuam.",
+              apagarRecorrencias,
+              () => setVersaoRecorrencias((v) => v + 1),
+            )
+          }
+        />
       </div>
 
       {categoriaEmEdicao && (
@@ -290,6 +375,22 @@ export function Settings() {
           onSalvar={() => {
             setOrcamentoEmEdicao(null);
             setVersaoOrcamentos((v) => v + 1);
+          }}
+        />
+      )}
+
+      {recorrenciaEmEdicao && (
+        <ModalRecorrencia
+          recorrencia={
+            recorrenciaEmEdicao === "nova" ? undefined : recorrenciaEmEdicao
+          }
+          categorias={categorias}
+          subcategorias={subcategorias}
+          pagamentos={formas}
+          onFechar={() => setRecorrenciaEmEdicao(null)}
+          onSalvar={() => {
+            setRecorrenciaEmEdicao(null);
+            setVersaoRecorrencias((v) => v + 1);
           }}
         />
       )}
