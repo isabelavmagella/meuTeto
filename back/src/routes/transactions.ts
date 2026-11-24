@@ -4,37 +4,18 @@ import { autenticar } from "../middlewares/auth.js";
 import { Tipo } from "../generated/prisma/enums.js";
 import { inteiroPositivo, mesmoDia } from "../utils/validacao.js";
 import { dataNoMes, vencimentoPrimeiraParcela } from "../utils/datas.js";
+import {
+  MSG_SUBCATEGORIA_INVALIDA,
+  MSG_SUBCATEGORIA_SEM_CATEGORIA,
+  validarSubcategoria,
+} from "../utils/vinculos.js";
 
 const MSG_PARCELA_SEM_VENCIMENTO =
   "Compras parceladas exigem uma forma de pagamento com dia de vencimento.";
-const MSG_SUBCATEGORIA_INVALIDA = "Subcategoria inválida.";
-const MSG_SUBCATEGORIA_SEM_CATEGORIA =
-  "Informe a categoria para usar uma subcategoria.";
-const MSG_SUBCATEGORIA_NAO_ENCONTRADA = "Subcategoria não encontrada.";
-const MSG_SUBCATEGORIA_DE_OUTRA_CATEGORIA =
-  "A subcategoria não pertence à categoria informada.";
 const MSG_SUBCATEGORIA_REMOVIDA =
   "A subcategoria foi removida porque a categoria da transação mudou.";
 
 const router = Router();
-
-async function validarSubcategoria(
-  id: number,
-  categoria: number,
-  userId: number,
-  exigirAtiva: boolean,
-) {
-  const subcategoria = await prisma.subcategory.findUnique({
-    where: { id_userId: { id, userId } },
-  });
-  if (!subcategoria || (exigirAtiva && !subcategoria.ativo)) {
-    return { status: 404, error: MSG_SUBCATEGORIA_NAO_ENCONTRADA };
-  }
-  if (subcategoria.categoryId !== categoria) {
-    return { status: 400, error: MSG_SUBCATEGORIA_DE_OUTRA_CATEGORIA };
-  }
-  return null;
-}
 
 router.post("/", autenticar, async (req, res) => {
   const {
