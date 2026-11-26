@@ -3,7 +3,11 @@ import { autenticar } from "../middlewares/auth.js";
 import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { prisma } from "../lib/prisma.js";
 import { Tipo } from "../generated/prisma/enums.js";
-import { inteiroPositivo } from "../utils/validacao.js";
+import {
+  MSG_VALOR_INVALIDO,
+  inteiroPositivo,
+  valorEmReais,
+} from "../utils/validacao.js";
 import { dataDoDia } from "../utils/datas.js";
 import {
   MSG_SUBCATEGORIA_INVALIDA,
@@ -63,10 +67,8 @@ async function validar(corpo: any, userId: number, atual?: Vinculos) {
 
   if (!Object.values(Tipo).includes(tipo)) return falha("Tipo inválido");
 
-  const valorNumero = Number(valor);
-  if (!Number.isFinite(valorNumero) || valorNumero <= 0) {
-    return falha("Valor inválido.");
-  }
+  const valorValido = valorEmReais(valor);
+  if (!valorValido) return falha(MSG_VALOR_INVALIDO);
 
   const dia = inteiroPositivo(diaDoMes);
   if (!dia || dia > 31) return falha("Dia do mês inválido. Use de 1 a 31.");
@@ -136,7 +138,7 @@ async function validar(corpo: any, userId: number, atual?: Vinculos) {
 
   const dados = {
     tipo: tipo as Tipo,
-    valor: String(valor),
+    valor: valorValido,
     descricao: descricao.trim(),
     diaDoMes: dia,
     dataInicio: inicio,

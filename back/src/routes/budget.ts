@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
 import { limitarDemo } from "../middlewares/limitesDemo.js";
-import { inteiroPositivo } from "../utils/validacao.js";
+import {
+  MSG_VALOR_INVALIDO,
+  inteiroPositivo,
+  valorEmReais,
+} from "../utils/validacao.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
 import { primeiroDiaDoMes } from "../utils/datas.js";
@@ -26,9 +30,9 @@ router.post("/", autenticar, limitarDemo("orcamentos"), async (req, res) => {
       .json({ error: "Preencha todos os campos obrigatórios." });
   }
 
-  const valorNumero = Number(valorLimite);
-  if (!Number.isFinite(valorNumero) || valorNumero <= 0) {
-    return res.status(400).json({ error: "Valor inválido." });
+  const valorValido = valorEmReais(valorLimite);
+  if (!valorValido) {
+    return res.status(400).json({ error: MSG_VALOR_INVALIDO });
   }
 
   const categoria = inteiroPositivo(categoryId);
@@ -71,7 +75,7 @@ router.post("/", autenticar, limitarDemo("orcamentos"), async (req, res) => {
         userId,
         categoryId: categoria,
         mes: dataMes,
-        valorLimite: valorLimite,
+        valorLimite: valorValido,
       },
       include: { category: true },
     });
@@ -140,12 +144,13 @@ router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
       return res.status(404).json({ error: "Orçamento não encontrado." });
     }
 
-    let valorNumero = Number(budgetProprio.valorLimite);
+    let valorValido = budgetProprio.valorLimite.toFixed(2);
     if (valorLimite != null && valorLimite !== "") {
-      valorNumero = Number(valorLimite);
-      if (!Number.isFinite(valorNumero) || valorNumero <= 0) {
-        return res.status(400).json({ error: "Valor inválido." });
+      const novo = valorEmReais(valorLimite);
+      if (!novo) {
+        return res.status(400).json({ error: MSG_VALOR_INVALIDO });
       }
+      valorValido = novo;
     }
 
     let categoria = budgetProprio.categoryId;
@@ -195,7 +200,7 @@ router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
     const budgetAtualizado = await prisma.budget.update({
       where: { id },
       data: {
-        valorLimite: valorNumero,
+        valorLimite: valorValido,
         categoryId: categoria,
         mes: dataMes,
       },
