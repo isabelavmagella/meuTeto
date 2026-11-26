@@ -159,6 +159,17 @@ No Windows, rode os testes a partir do caminho com a letra do drive em
 maiúscula (`C:\...`): com `c:\...`, o Vitest carrega o módulo duas vezes e
 falha com "failed to find the runner".
 
+### Padrão de commits
+
+Os commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/)
+(`tipo(escopo): resumo`, com escopo `back` ou `front`). Para ativar o template e
+o hook que valida a mensagem:
+
+```bash
+git config core.hooksPath .githooks
+git config commit.template .gitmessage
+```
+
 ## Modo demonstração
 
 No ambiente público não existe cadastro nem login: cada visitante recebe um
