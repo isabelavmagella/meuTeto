@@ -8,6 +8,8 @@ type Props = {
   periodo: string;
   opcoesPeriodo: Opcao[];
   onTrocarPeriodo: (periodo: string) => void;
+  rotulo?: string;
+  dica?: string;
   filtrosAtivos?: number;
   onAbrirFiltros?: () => void;
 };
@@ -16,6 +18,8 @@ export function BarraMobile({
   periodo,
   opcoesPeriodo,
   onTrocarPeriodo,
+  rotulo: rotuloFiltro = "Mês",
+  dica,
   filtrosAtivos = 0,
   onAbrirFiltros,
 }: Props) {
@@ -38,10 +42,11 @@ export function BarraMobile({
           <IconeChevron direcao="esquerda" />
         </button>
 
-        <label className={styles.mesAtual}>
+        <label className={styles.mesAtual} title={dica}>
           {periodo ? rotulo : "Todos os meses"}
           <select
-            aria-label="Mês"
+            aria-label={rotuloFiltro}
+            aria-description={dica}
             value={periodo}
             onChange={(e) => onTrocarPeriodo(e.target.value)}
           >

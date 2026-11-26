@@ -18,11 +18,23 @@ import {
   type Filtros,
 } from "../../components/Transactions/SheetFiltros";
 import { ResumoTransacoes } from "../../components/Transactions/ResumoTransacoes";
+import {
+  ChipsFiltros,
+  type Chip,
+} from "../../components/Transactions/ChipsFiltros";
 import { TabelaTransacoes } from "../../components/Transactions/TabelaTransacoes";
 import { ModalTransacao } from "../../components/Transactions/ModalTransacao";
 import { IconeCalendario } from "../../components/Header/Icones";
 
 const POR_PAGINA = 12;
+const ESPERA_BUSCA_MS = 300;
+const DICA_VENCIMENTO = "Filtra pela data de vencimento da conta ou fatura";
+
+// "AAAA-MM-DD" → "dd/mm" (curto, para o chip) ou "dd/mm/aaaa".
+function formatarDia(iso: string, curto = false) {
+  const [ano, mes, dia] = iso.split("-");
+  return curto ? `${dia}/${mes}` : `${dia}/${mes}/${ano}`;
+}
 
 export function Transactions() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -39,6 +51,10 @@ export function Transactions() {
   const [periodo, setPeriodo] = useState(
     PERIODOS[PERIODOS.length - 1]?.valor ?? "",
   );
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [busca, setBusca] = useState("");
+  const [buscaAplicada, setBuscaAplicada] = useState("");
   const [pagina, setPagina] = useState(1);
   const [selecionadas, setSelecionadas] = useState<Set<number>>(new Set());
 
@@ -56,26 +72,61 @@ export function Transactions() {
     return () => controle.abort();
   }, []);
 
-  const consulta = `${periodo}|${categoria}|${subcategoria}|${versao}`;
+  // Espera parar de digitar antes de buscar na API.
+  useEffect(() => {
+    const texto = busca.trim();
+    if (texto === buscaAplicada) return;
+    const espera = setTimeout(() => {
+      setBuscaAplicada(texto);
+      setPagina(1);
+      setSelecionadas(new Set());
+    }, ESPERA_BUSCA_MS);
+    return () => clearTimeout(espera);
+  }, [busca, buscaAplicada]);
+
+  // A data da compra é outro recorte de data: enquanto preenchida, substitui
+  // o vencimento. A busca por texto soma com o vencimento.
+  const temData = !!(de || ate);
+  const periodoEfetivo = temData ? "" : periodo;
+
+  const consulta = [
+    periodoEfetivo,
+    categoria,
+    subcategoria,
+    buscaAplicada,
+    de,
+    ate,
+    versao,
+  ].join("|");
   const carregando = consultaCarregada !== consulta;
 
   useEffect(() => {
     const controle = new AbortController();
     const params = new URLSearchParams({ por: "vencimento" });
-    if (periodo) params.set("mes", periodo);
+    if (periodoEfetivo) params.set("mes", periodoEfetivo);
     if (categoria) params.set("categoria", categoria);
     if (subcategoria) params.set("subcategoria", subcategoria);
+    if (buscaAplicada) params.set("busca", buscaAplicada);
+    if (de) params.set("de", de);
+    if (ate) params.set("ate", ate);
     buscar<Transacao>(`/transactions?${params}`, controle.signal)
       .then((lista) => {
         setTransacoes(lista);
         setSelecionadas(new Set());
-        setConsultaCarregada(
-          `${periodo}|${categoria}|${subcategoria}|${versao}`,
-        );
+        setConsultaCarregada(consulta);
       })
       .catch(() => {});
     return () => controle.abort();
-  }, [periodo, categoria, subcategoria, versao]);
+  }, [
+    periodoEfetivo,
+    categoria,
+    subcategoria,
+    buscaAplicada,
+    de,
+    ate,
+    versao,
+    consulta,
+  ]);
 
   const transacoesFiltradas = pagamento
     ? transacoes.filter((t) => String(t.formaPagamentoId) === pagamento)
@@ -111,24 +162,117 @@ export function Transactions() {
     ...pagamentos.map((p) => ({ valor: String(p.id), rotulo: p.nome })),
   ];
   const filtrosAtivos =
-    (categoria ? 1 : 0) + (subcategoria ? 1 : 0) + (pagamento ? 1 : 0);
+    (categoria ? 1 : 0) +
+    (subcategoria ? 1 : 0) +
+    (pagamento ? 1 : 0) +
+    (temData ? 1 : 0);
+  const rotuloMes = PERIODOS.find((p) => p.valor === periodoEfetivo)?.rotulo;
 
-  function trocarFiltro(setter: (valor: string) => void) {
-    return (valor: string) => {
-      setter(valor);
-      setPagina(1);
-      setSelecionadas(new Set());
-    };
+  function recomecar() {
+    setPagina(1);
+    setSelecionadas(new Set());
+  }
+
+  // Escolher um vencimento volta a filtrar por ele, então tira a data da compra.
+  function trocarMes(valor: string) {
+    setPeriodo(valor);
+    setDe("");
+    setAte("");
+    recomecar();
   }
 
   function aplicarFiltros(filtros: Filtros) {
     setCategoria(filtros.categoria);
     setSubcategoria(filtros.subcategoria);
     setPagamento(filtros.pagamento);
-    setPeriodo(filtros.periodo);
+    setDe(filtros.de);
+    setAte(filtros.ate);
     setPagina(1);
     setSelecionadas(new Set());
     setFiltrosAbertos(false);
+  }
+
+  const nomeDe = (opcoes: { valor: string; rotulo: string }[], valor: string) =>
+    opcoes.find((o) => o.valor === valor)?.rotulo ?? valor;
+
+  const chips: Chip[] = [];
+  if (temData) {
+    chips.push({
+      chave: "compra",
+      rotulo: "Compra",
+      valor:
+        de && ate
+          ? `${formatarDia(de, true)} – ${formatarDia(ate, true)}`
+          : de
+            ? `a partir de ${formatarDia(de, true)}`
+            : `até ${formatarDia(ate, true)}`,
+      titulo:
+        de && ate
+          ? `De ${formatarDia(de)} a ${formatarDia(ate)}`
+          : de
+            ? `A partir de ${formatarDia(de)}`
+            : `Até ${formatarDia(ate)}`,
+      onRemover: () => {
+        setDe("");
+        setAte("");
+        recomecar();
+      },
+    });
+  }
+  if (rotuloMes) {
+    chips.push({
+      chave: "vencimento",
+      rotulo: "Vencimento",
+      valor: rotuloMes,
+      onRemover: () => trocarMes(""),
+    });
+  }
+  if (categoria) {
+    chips.push({
+      chave: "categoria",
+      rotulo: "Categoria",
+      valor: nomeDe(opcoesCategoria, categoria),
+      // A subcategoria depende da categoria, então sai junto.
+      onRemover: () => {
+        setCategoria("");
+        setSubcategoria("");
+        recomecar();
+      },
+    });
+  }
+  if (subcategoria) {
+    chips.push({
+      chave: "subcategoria",
+      rotulo: "Subcategoria",
+      valor: nomeDe(opcoesSubcategoria, subcategoria),
+      onRemover: () => {
+        setSubcategoria("");
+        recomecar();
+      },
+    });
+  }
+  if (pagamento) {
+    chips.push({
+      chave: "pagamento",
+      rotulo: "Pagamento",
+      valor: nomeDe(opcoesPagamento, pagamento),
+      onRemover: () => {
+        setPagamento("");
+        recomecar();
+      },
+    });
+  }
+  if (buscaAplicada) {
+    chips.push({
+      chave: "busca",
+      rotulo: "Busca",
+      valor: `“${buscaAplicada}”`,
+      onRemover: () => {
+        setBusca("");
+        setBuscaAplicada("");
+        recomecar();
+      },
+    });
   }
 
   function alternar(id: number) {
@@ -180,17 +324,20 @@ export function Transactions() {
         />
         <FiltroSelect
           icone={<IconeCalendario />}
-          rotulo="Mês"
-          valor={periodo}
+          rotulo="Vencimento"
+          dica={DICA_VENCIMENTO}
+          valor={periodoEfetivo}
           opcoes={opcoesPeriodo}
-          onChange={trocarFiltro(setPeriodo)}
+          onChange={trocarMes}
         />
       </Header>
 
       <BarraMobile
-        periodo={periodo}
+        periodo={periodoEfetivo}
         opcoesPeriodo={opcoesPeriodo}
-        onTrocarPeriodo={trocarFiltro(setPeriodo)}
+        onTrocarPeriodo={trocarMes}
+        rotulo="Vencimento"
+        dica={DICA_VENCIMENTO}
         filtrosAtivos={filtrosAtivos}
         onAbrirFiltros={() => setFiltrosAbertos(true)}
       />
@@ -200,11 +347,24 @@ export function Transactions() {
         receitas={somar("RECEITA")}
         despesas={somar("DESPESA")}
         selecionadas={selecionadas.size}
+        busca={busca}
+        onBuscar={setBusca}
         onAdicionar={() => setEmEdicao("nova")}
         onApagarSelecionadas={() =>
           apagar(transacoesFiltradas.filter((t) => selecionadas.has(t.id)))
         }
       />
+
+      <ChipsFiltros chips={chips} />
+
+      {buscaAplicada && rotuloMes && (
+        <p className={styles.aviso} role="status">
+          Buscando só no vencimento de {rotuloMes}.
+          <button type="button" onClick={() => trocarMes("")}>
+            Buscar em todos os meses
+          </button>
+        </p>
+      )}
 
       <TabelaTransacoes
         transacoes={transacoesDaPagina}
@@ -223,11 +383,10 @@ export function Transactions() {
 
       {filtrosAbertos && (
         <SheetFiltros
-          filtros={{ categoria, subcategoria, pagamento, periodo }}
+          filtros={{ categoria, subcategoria, pagamento, de, ate }}
           opcoesCategoria={opcoesCategoria}
           opcoesSubcategoria={opcoesSubcategoria}
           opcoesPagamento={opcoesPagamento}
-          opcoesPeriodo={opcoesPeriodo}
           onAplicar={aplicarFiltros}
           onFechar={() => setFiltrosAbertos(false)}
         />

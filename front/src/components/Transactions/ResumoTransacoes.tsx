@@ -1,12 +1,14 @@
 import styles from "./ResumoTransacoes.module.css";
 import { moeda } from "../../pages/Dashboard/formatadores";
-import { IconeLixeira, IconeMais } from "./Icones";
+import { IconeLixeira, IconeLupa, IconeMais } from "./Icones";
 
 type Props = {
   quantidade: number;
   receitas: number;
   despesas: number;
   selecionadas: number;
+  busca: string;
+  onBuscar: (texto: string) => void;
   onAdicionar?: () => void;
   onApagarSelecionadas?: () => void;
 };
@@ -20,6 +22,8 @@ export function ResumoTransacoes({
   receitas,
   despesas,
   selecionadas,
+  busca,
+  onBuscar,
   onAdicionar,
   onApagarSelecionadas,
 }: Props) {
@@ -36,6 +40,29 @@ export function ResumoTransacoes({
           <IconeMais />
           Adicionar transação
         </button>
+
+        <div className={styles.busca} role="search">
+          <IconeLupa />
+          <input
+            type="search"
+            aria-label="Buscar na descrição"
+            placeholder="Buscar na descrição"
+            maxLength={100}
+            value={busca}
+            onChange={(e) => onBuscar(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && busca && onBuscar("")}
+          />
+          {busca && (
+            <button
+              type="button"
+              className={styles.limparBusca}
+              aria-label="Limpar busca"
+              onClick={() => onBuscar("")}
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         <dl className={styles.totais}>
           <div className={styles.quantidade}>

@@ -19,6 +19,33 @@
   box-sizing: border-box;
 }
 
+.aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: -4px 4px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.aviso button {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.aviso button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 @media (max-width: 760px) {
   .page {
     padding: 10px 10px calc(88px + env(safe-area-inset-bottom, 0px));
