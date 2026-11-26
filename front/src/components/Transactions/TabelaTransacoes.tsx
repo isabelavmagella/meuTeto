@@ -75,6 +75,7 @@ export function TabelaTransacoes({
               <th>Data da compra</th>
               <th className={styles.centro}>Parcela</th>
               <th>Categoria</th>
+              <th>Pagamento</th>
               <th>Vencimento</th>
               <th className={styles.direita}>Ações</th>
             </tr>
@@ -83,7 +84,7 @@ export function TabelaTransacoes({
           <tbody>
             {transacoes.length === 0 && (
               <tr>
-                <td colSpan={9} className={styles.vazio}>
+                <td colSpan={10} className={styles.vazio}>
                   {carregando
                     ? "Carregando transações…"
                     : "Nenhuma transação encontrada."}
@@ -150,6 +151,9 @@ export function TabelaTransacoes({
                     ) : (
                       "—"
                     )}
+                  </td>
+                  <td className={styles.muted}>
+                    {t.formaPagamento?.nome ?? "—"}
                   </td>
                   <td className={styles.muted}>
                     {formatarData(t.dataVencimento)}
