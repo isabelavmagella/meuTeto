@@ -3,6 +3,10 @@ export const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+// Campo de valor digitado em centavos: 12 dígitos = R$ 9.999.999.999,99, o
+// máximo que a coluna Decimal(12,2) comporta.
+export const MAX_DIGITOS_VALOR = 12;
+
 export const moedaInteira = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",

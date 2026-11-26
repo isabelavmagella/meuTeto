@@ -5,7 +5,7 @@ import { z } from "zod";
 import form from "../Modal/Formulario.module.css";
 import tipos from "../Transactions/ModalTransacao.module.css";
 import { Modal } from "../Modal/Modal";
-import { moeda } from "../../pages/Dashboard/formatadores";
+import { MAX_DIGITOS_VALOR, moeda } from "../../pages/Dashboard/formatadores";
 import {
   salvarRecorrencia,
   type Categoria,
@@ -251,7 +251,9 @@ export function ModalRecorrencia({
                   value={field.value ? moeda.format(field.value) : ""}
                   onBlur={field.onBlur}
                   onChange={(e) => {
-                    const digitos = e.target.value.replace(/\D/g, "");
+                    const digitos = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, MAX_DIGITOS_VALOR);
                     field.onChange(digitos ? Number(digitos) / 100 : 0);
                   }}
                 />

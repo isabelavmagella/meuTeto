@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import form from "../Modal/Formulario.module.css";
 import { Modal } from "../Modal/Modal";
-import { moeda } from "../../pages/Dashboard/formatadores";
+import { MAX_DIGITOS_VALOR, moeda } from "../../pages/Dashboard/formatadores";
 import {
   salvarOrcamento,
   type Categoria,
@@ -169,7 +169,9 @@ export function ModalOrcamento({
                   value={field.value ? moeda.format(field.value) : ""}
                   onBlur={field.onBlur}
                   onChange={(e) => {
-                    const digitos = e.target.value.replace(/\D/g, "");
+                    const digitos = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, MAX_DIGITOS_VALOR);
                     field.onChange(digitos ? Number(digitos) / 100 : 0);
                   }}
                 />
