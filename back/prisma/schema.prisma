@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -61,7 +62,9 @@ model Category {
 
   transacoesRecorrentes TransacaoRecorrente[]
 
-  @@unique([cor, userId])
+  // Cor única só entre as categorias ativas: arquivar uma categoria libera a
+  // cor dela (o front só mostra como ocupadas as cores das ativas).
+  @@unique([cor, userId], where: { ativo: true })
   @@unique([userId, nomeNormalizado])
   @@unique([id, userId])
 }

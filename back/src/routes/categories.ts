@@ -6,7 +6,7 @@ import { erroPrisma } from "../utils/erros.js";
 import { inteiroPositivo, normalizarNome } from "../utils/validacao.js";
 
 const MSG_CATEGORIA_DUPLICADO =
-  "Já existe uma categoria com esse nome ou essa cor (pode estar arquivada).";
+  "Já existe uma categoria com esse nome (pode estar arquivada) ou com essa cor.";
 
 const router = Router();
 
