@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { Tipo } from "../generated/prisma/enums.js";
 import { inteiroPositivo, mesmoDia } from "../utils/validacao.js";
 import {
@@ -23,7 +24,7 @@ const DIA_MS = 24 * 60 * 60 * 1000;
 
 const router = Router();
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("transacoes"), async (req, res) => {
   const {
     tipo,
     valor,
@@ -382,7 +383,7 @@ router.delete("/:id", autenticar, async (req, res) => {
   }
 });
 
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const {
     tipo,
     valor,

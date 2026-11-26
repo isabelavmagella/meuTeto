@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
 import { inteiroPositivo, normalizarNome } from "../utils/validacao.js";
@@ -25,7 +26,7 @@ async function categoriaAtiva(id: number, userId: number) {
   return categoria?.ativo ? categoria : null;
 }
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("subcategorias"), async (req, res) => {
   const { nome, categoryId } = req.body;
   const userId = req.user?.id;
 
@@ -128,7 +129,7 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const id = inteiroPositivo(req.params.id);
   const userId = req.user?.id;
   const { nome, categoryId } = req.body;

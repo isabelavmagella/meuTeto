@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { prisma } from "../lib/prisma.js";
 import { Tipo } from "../generated/prisma/enums.js";
 import { inteiroPositivo } from "../utils/validacao.js";
@@ -159,7 +160,7 @@ async function gerar(
   return linha?.geradas ?? 0;
 }
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("recorrencias"), async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
     return res.status(401).json({ error: "Usuário não autenticado" });
@@ -210,7 +211,7 @@ router.get("/", autenticar, async (req, res) => {
 });
 
 // Só afeta os meses ainda não gerados: o que já foi lançado permanece.
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
     return res.status(401).json({ error: "Usuário não autenticado" });

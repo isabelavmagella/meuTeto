@@ -49,3 +49,15 @@ export function primeiroDiaDoMes(mesAno: unknown): Date | null {
   if (mes < 1 || mes > 12) return null;
   return new Date(Date.UTC(ano, mes - 1, 1));
 }
+
+// Dia de hoje em America/Sao_Paulo, como meia-noite UTC (o formato das datas
+// gravadas pelo app).
+export function hojeEmSaoPaulo(agora = new Date()): Date {
+  const iso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(agora);
+  return dataDoDia(iso)!;
+}

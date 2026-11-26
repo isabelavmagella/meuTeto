@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { inteiroPositivo } from "../utils/validacao.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
@@ -11,7 +12,7 @@ const MSG_MES_INVALIDO = "Mês inválido. Use o formato AAAA-MM.";
 
 const router = Router();
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("orcamentos"), async (req, res) => {
   const { mesAno, valorLimite, categoryId } = req.body;
   const userId = req.user?.id;
 
@@ -118,7 +119,7 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const { mesAno, valorLimite, categoryId } = req.body;
   const userId = req.user?.id;
   if (!userId) {

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import {
   inteiroPositivo,
   normalizarNome,
@@ -13,7 +14,7 @@ const MSG_NOME_DUPLICADO =
 
 const router = Router();
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("formasPagamento"), async (req, res) => {
   const { nome, diaValidade, diaFechamento } = req.body;
   const userId = req.user?.id;
 
@@ -132,7 +133,7 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const id = Number(req.params.id);
   const userId = req.user?.id;
   const { nome, diaValidade, diaFechamento } = req.body;
