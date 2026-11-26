@@ -3,7 +3,11 @@ import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
 import { Tipo } from "../generated/prisma/enums.js";
 import { inteiroPositivo, mesmoDia } from "../utils/validacao.js";
-import { dataNoMes, vencimentoPrimeiraParcela } from "../utils/datas.js";
+import {
+  dataDoDia,
+  dataNoMes,
+  vencimentoPrimeiraParcela,
+} from "../utils/datas.js";
 import {
   MSG_SUBCATEGORIA_INVALIDA,
   MSG_SUBCATEGORIA_SEM_CATEGORIA,
@@ -14,6 +18,8 @@ const MSG_PARCELA_SEM_VENCIMENTO =
   "Compras parceladas exigem uma forma de pagamento com dia de vencimento.";
 const MSG_SUBCATEGORIA_REMOVIDA =
   "A subcategoria foi removida porque a categoria da transação mudou.";
+const BUSCA_MAX = 100;
+const DIA_MS = 24 * 60 * 60 * 1000;
 
 const router = Router();
 
@@ -202,6 +208,9 @@ router.get("/", autenticar, async (req, res) => {
     categoria: categoryParam,
     subcategoria: subcategoryParam,
     por: porParam,
+    busca: buscaParam,
+    de: deParam,
+    ate: ateParam,
   } = req.query;
 
   const por = porParam ?? "compra";
@@ -236,6 +245,46 @@ router.get("/", autenticar, async (req, res) => {
     }
   }
 
+  let busca = "";
+  if (buscaParam !== undefined) {
+    if (typeof buscaParam !== "string") {
+      return res.status(400).json({ error: "Busca inválida." });
+    }
+    busca = buscaParam.trim();
+    if (busca.length > BUSCA_MAX) {
+      return res
+        .status(400)
+        .json({ error: `A busca pode ter no máximo ${BUSCA_MAX} caracteres.` });
+    }
+  }
+
+  // Data da compra: "data" é gravada como meia-noite UTC do dia escolhido,
+  // então os limites também são meia-noite UTC; "até" inclui o dia inteiro.
+  const de = deParam ? dataDoDia(deParam) : null;
+  if (deParam && !de) {
+    return res.status(400).json({ error: "Data inicial inválida." });
+  }
+  const ate = ateParam ? dataDoDia(ateParam) : null;
+  if (ateParam && !ate) {
+    return res.status(400).json({ error: "Data final inválida." });
+  }
+  if (de && ate && de > ate) {
+    return res
+      .status(400)
+      .json({ error: "A data inicial não pode ser depois da final." });
+  }
+  if (de || ate) {
+    // Em AND para somar com o filtro de mês, que também pode usar "data".
+    filtro.AND = [
+      {
+        data: {
+          ...(de && { gte: de }),
+          ...(ate && { lt: new Date(ate.getTime() + DIA_MS) }),
+        },
+      },
+    ];
+  }
+
   if (tipoParam) {
     if (!Object.values(Tipo).includes(tipoParam as Tipo)) {
       return res.status(400).json({ error: "Tipo inválido." });
@@ -265,6 +314,18 @@ router.get("/", autenticar, async (req, res) => {
         return res.status(400).json({ error: MSG_SUBCATEGORIA_INVALIDA });
       }
       filtro.subcategoryId = sub.id;
+    }
+
+    if (busca) {
+      // O Prisma não aplica unaccent no where: os ids saem de uma query
+      // própria, sempre do usuário, ignorando acentos e maiúsculas.
+      const padrao = `%${busca.replace(/[\\%_]/g, "\\$&")}%`;
+      const encontradas = await prisma.$queryRaw<{ id: number }[]>`
+        SELECT id FROM "Transaction"
+        WHERE "userId" = ${userId}
+          AND unaccent(descricao) ILIKE unaccent(${padrao})
+      `;
+      filtro.id = { in: encontradas.map((t) => t.id) };
     }
 
     const transacoes = await prisma.transaction.findMany({
