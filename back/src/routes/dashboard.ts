@@ -2,6 +2,7 @@ import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
 import { prisma } from "../lib/prisma.js";
 import { primeiroDiaDoMes } from "../utils/datas.js";
+import { centavos, reais } from "../utils/dinheiro.js";
 
 const MSG_MES_INVALIDO = "Mês inválido. Use o formato AAAA-MM.";
 
@@ -61,6 +62,7 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
       }),
     ]);
 
+    // Tudo em centavos inteiros (ver utils/dinheiro); vira reais só na resposta.
     let totalReceita = 0;
     let totalDespesa = 0;
     const gastosCategoria: {
@@ -74,7 +76,7 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
     } = {};
 
     transacoes.forEach((t) => {
-      const valorNum = Number(t.valor);
+      const valorNum = centavos(t.valor);
       if (t.tipo === "RECEITA") {
         totalReceita += valorNum;
       } else if (t.tipo === "DESPESA") {
@@ -110,7 +112,7 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
     let totalReceitaMesAnterior = 0;
     let totalDespesaMesAnterior = 0;
     transacoesMesAnterior.forEach((t) => {
-      const valorNum = Number(t.valor);
+      const valorNum = centavos(t.valor);
       if (t.tipo === "RECEITA") totalReceitaMesAnterior += valorNum;
       if (t.tipo === "DESPESA") totalDespesaMesAnterior += valorNum;
     });
@@ -124,22 +126,30 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
       );
     };
 
-    const despesaPorCategoria = Object.values(gastosCategoria).sort(
-      (a, b) => b.valor - a.valor,
-    );
+    const despesaPorCategoria = Object.values(gastosCategoria)
+      .sort((a, b) => b.valor - a.valor)
+      .map((c) => ({
+        ...c,
+        valor: reais(c.valor),
+        subcategorias: c.subcategorias.map((s) => ({
+          ...s,
+          valor: reais(s.valor),
+        })),
+      }));
 
     const comparacaoOrcamento = orcamentos.map((b) => {
       const gasto = gastosCategoria[b.category.nome]?.valor || 0;
-      const limite = Number(b.valorLimite);
+      const limite = centavos(b.valorLimite);
       const porcentagem =
         limite > 0 ? Number(((gasto / limite) * 100).toFixed(1)) : 0;
 
       return {
         nomeCategoria: b.category.nome,
         corCategoria: b.category.cor,
-        limiteOrcamento: limite,
-        valorGasto: gasto,
+        limiteOrcamento: reais(limite),
+        valorGasto: reais(gasto),
         porcentagemUsada: porcentagem,
+        // Comparação exata em centavos: gastar exatamente o limite não estoura.
         ultrapassou: gasto > limite,
       };
     });
@@ -147,24 +157,24 @@ router.get("/monthly-summary", autenticar, async (req, res) => {
     return res.json({
       kpis: {
         receita: {
-          valor: totalReceita,
-          totalReceitaMesAnterior,
+          valor: reais(totalReceita),
+          totalReceitaMesAnterior: reais(totalReceitaMesAnterior),
           diferencaPorcentagem: calcPercentual(
             totalReceita,
             totalReceitaMesAnterior,
           ),
         },
         despesa: {
-          valor: totalDespesa,
-          totalDespesaMesAnterior,
+          valor: reais(totalDespesa),
+          totalDespesaMesAnterior: reais(totalDespesaMesAnterior),
           diferencaPorcentagem: calcPercentual(
             totalDespesa,
             totalDespesaMesAnterior,
           ),
         },
         saldo: {
-          valor: saldoFinal,
-          saldoFinalMesAnterior,
+          valor: reais(saldoFinal),
+          saldoFinalMesAnterior: reais(saldoFinalMesAnterior),
           diferencaPorcentagem: calcPercentual(
             saldoFinal,
             saldoFinalMesAnterior,
@@ -210,7 +220,7 @@ router.get("/historical-trends", autenticar, async (req, res) => {
 
     transacoes.forEach((t) => {
       const indexMes = (t.dataVencimento ?? t.data).getUTCMonth();
-      const valor = Number(t.valor);
+      const valor = centavos(t.valor);
 
       if (t.tipo === "RECEITA") {
         dadosMensais[indexMes]!.receita += valor;
@@ -242,9 +252,9 @@ router.get("/historical-trends", autenticar, async (req, res) => {
       return {
         numeroMes: index + 1,
         nomeMes: nome,
-        receita,
-        despesa,
-        saldoFinal,
+        receita: reais(receita),
+        despesa: reais(despesa),
+        saldoFinal: reais(saldoFinal),
       };
     });
 
