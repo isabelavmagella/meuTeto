@@ -199,9 +199,16 @@ router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
       return res.status(200).json(comCor(subcategoriaAtualizada));
     }
 
+    // Transações e recorrências que usam a subcategoria acompanham a nova
+    // categoria; senão as próximas transações geradas nasceriam com uma
+    // subcategoria de outra categoria, e a recorrência não poderia ser editada.
     const [subcategoriaAtualizada, { count }] = await prisma.$transaction([
       atualizarSubcategoria,
       prisma.transaction.updateMany({
+        where: { subcategoryId: id, userId },
+        data: { categoryId: novaCategoria },
+      }),
+      prisma.transacaoRecorrente.updateMany({
         where: { subcategoryId: id, userId },
         data: { categoryId: novaCategoria },
       }),
