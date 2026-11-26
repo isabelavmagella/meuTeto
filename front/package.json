@@ -1,7 +1,10 @@
 {
-  "name": "meu-teto",
-  "private": true,
+  "name": "meu-teto-web",
   "version": "0.0.0",
+  "private": true,
+  "description": "Front-end do Meu Teto: React + Vite",
+  "author": "Isabela Virginio Magella",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
