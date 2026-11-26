@@ -1,9 +1,12 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import type { NextFunction, Request, Response } from "express";
 import { erroPrisma } from "../utils/erros.js";
 import { autenticar } from "../middlewares/auth.js";
+import { config } from "../config.js";
+import { tokenDeLogin } from "../utils/token.js";
+import { gerarRecorrentesDoUsuario } from "../utils/recorrencias.js";
 
 const SENHA_MIN = 8;
 const MSG_EMAIL_DUPLICADO = "E-mail já cadastrado";
@@ -14,7 +17,18 @@ function normalizarEmail(email: unknown): string {
 
 const router = Router();
 
-router.post("/register", async (req, res) => {
+// No ambiente público não existe conta real: só o modo demonstração.
+function exigirCadastroLiberado(_req: Request, res: Response, next: NextFunction) {
+  if (!config.permitirCadastro) {
+    return res.status(403).json({
+      error: "Cadastro e login estão desativados. Use o modo demonstração.",
+      code: "CADASTRO_DESATIVADO",
+    });
+  }
+  next();
+}
+
+router.post("/register", exigirCadastroLiberado, async (req, res) => {
   const { nome, password } = req.body;
   const email = normalizarEmail(req.body.email);
 
@@ -62,7 +76,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", exigirCadastroLiberado, async (req, res) => {
   const { password } = req.body;
   const email = normalizarEmail(req.body.email);
 
@@ -73,17 +87,27 @@ router.post("/login", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    // Usuários demo têm senha aleatória inutilizável, mas a checagem explícita
+    // não depende disso.
+    if (
+      !user ||
+      user.isDemo ||
+      !(await bcrypt.compare(password, user.password))
+    ) {
       return res.status(401).json({ error: "E-mail ou senha incorretos" });
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
-      expiresIn: "8h",
-    });
+    const token = tokenDeLogin(user.id);
 
     return res.json({
       token,
-      user: { id: user.id, nome: user.nome, email: user.email },
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        isDemo: false,
+        demoExpiresAt: null,
+      },
     });
   } catch (err) {
     console.error(err);
@@ -95,10 +119,23 @@ router.get("/me", autenticar, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, nome: true, email: true },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        isDemo: true,
+        demoExpiresAt: true,
+      },
     });
 
     if (!user) return res.status(401).json({ error: "Não autenticado" });
+
+    // O front chama /me uma vez a cada carregamento do app: é o momento de
+    // lançar as recorrências do mês, sem job diário. Falhar aqui não impede
+    // o login.
+    await gerarRecorrentesDoUsuario(user.id).catch((err) =>
+      console.error("Falha ao gerar recorrências:", err),
+    );
 
     return res.json(user);
   } catch (err) {
