@@ -131,10 +131,11 @@ export function Transactions() {
   const transacoesFiltradas = pagamento
     ? transacoes.filter((t) => String(t.formaPagamentoId) === pagamento)
     : transacoes;
+  // Soma em centavos inteiros (float acumula erro) e volta para reais no fim.
   const somar = (tipo: Transacao["tipo"]) =>
     transacoesFiltradas
       .filter((t) => t.tipo === tipo)
-      .reduce((acc, t) => acc + Number(t.valor), 0);
+      .reduce((acc, t) => acc + Math.round(Number(t.valor) * 100), 0) / 100;
 
   const totalPaginas = Math.max(
     1,
