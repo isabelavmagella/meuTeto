@@ -10,7 +10,9 @@ export type Filtros = {
   categoria: string;
   subcategoria: string;
   pagamento: string;
-  periodo: string;
+  // Data da compra, "AAAA-MM-DD". Quando preenchida, substitui o vencimento.
+  de: string;
+  ate: string;
 };
 
 type Props = {
@@ -18,7 +20,6 @@ type Props = {
   opcoesCategoria: Opcao[];
   opcoesSubcategoria: OpcaoSubcategoria[];
   opcoesPagamento: Opcao[];
-  opcoesPeriodo: Opcao[];
   onAplicar: (filtros: Filtros) => void;
   onFechar: () => void;
 };
@@ -28,7 +29,6 @@ export function SheetFiltros({
   opcoesCategoria,
   opcoesSubcategoria,
   opcoesPagamento,
-  opcoesPeriodo,
   onAplicar,
   onFechar,
 }: Props) {
@@ -39,6 +39,8 @@ export function SheetFiltros({
   const subcategoriasDaCategoria = opcoesSubcategoria.filter(
     (o) => o.categoria === rascunho.categoria,
   );
+  const intervaloInvalido =
+    !!rascunho.de && !!rascunho.ate && rascunho.de > rascunho.ate;
 
   function campo(
     chave: keyof Filtros,
@@ -78,7 +80,7 @@ export function SheetFiltros({
         className={styles.sheet}
         onSubmit={(e) => {
           e.preventDefault();
-          onAplicar(rascunho);
+          if (!intervaloInvalido) onAplicar(rascunho);
         }}
       >
         <span className={styles.alca} aria-hidden="true" />
@@ -94,6 +96,8 @@ export function SheetFiltros({
                 categoria: "",
                 subcategoria: "",
                 pagamento: "",
+                de: "",
+                ate: "",
               })
             }
           >
@@ -119,9 +123,49 @@ export function SheetFiltros({
           { desabilitado: subcategoriasDaCategoria.length === 0 },
         )}
         {campo("pagamento", "Pagamento", opcoesPagamento)}
-        {campo("periodo", "Mês", opcoesPeriodo)}
+        <fieldset className={styles.intervalo}>
+          <legend>
+            Data da compra
+            <span className={styles.apoio}>Quando você fez a compra</span>
+          </legend>
+          <div className={styles.campo}>
+            <label htmlFor={`${id}-de`}>De</label>
+            <input
+              id={`${id}-de`}
+              type="date"
+              value={rascunho.de}
+              max={rascunho.ate || undefined}
+              aria-invalid={intervaloInvalido}
+              aria-describedby={intervaloInvalido ? `${id}-erro` : undefined}
+              onChange={(e) => setRascunho({ ...rascunho, de: e.target.value })}
+            />
+          </div>
+          <div className={styles.campo}>
+            <label htmlFor={`${id}-ate`}>Até</label>
+            <input
+              id={`${id}-ate`}
+              type="date"
+              value={rascunho.ate}
+              min={rascunho.de || undefined}
+              aria-invalid={intervaloInvalido}
+              aria-describedby={intervaloInvalido ? `${id}-erro` : undefined}
+              onChange={(e) =>
+                setRascunho({ ...rascunho, ate: e.target.value })
+              }
+            />
+          </div>
+          {intervaloInvalido && (
+            <p className={styles.erro} id={`${id}-erro`} role="alert">
+              A data inicial não pode ser depois da final.
+            </p>
+          )}
+        </fieldset>
 
-        <button type="submit" className={styles.aplicar}>
+        <button
+          type="submit"
+          className={styles.aplicar}
+          disabled={intervaloInvalido}
+        >
           Aplicar
         </button>
       </form>

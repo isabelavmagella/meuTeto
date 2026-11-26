@@ -1,7 +1,7 @@
-// Job diário: lança as transações das recorrências ativas até o mês atual.
-// A função é idempotente, então rodar mais de uma vez por dia é seguro.
-// Agendar no host, ex.: crontab "0 6 * * * cd /caminho/back && npm run recorrentes:gerar"
-// (no Windows, o Agendador de Tarefas rodando o mesmo comando).
+// Uso local/manual: lança as recorrências ativas de TODOS os usuários até o
+// mês atual. Em produção não é necessário, porque o app já chama a função por
+// usuário a cada carregamento (GET /api/auth/me). A função é idempotente, então
+// rodar mais de uma vez é seguro.
 import "dotenv/config";
 import { prisma } from "../lib/prisma.js";
 

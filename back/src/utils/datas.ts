@@ -31,12 +31,17 @@ export function vencimentoPrimeiraParcela(
   return dataNoMes(fechamento, mesesAteVencimento, diaValidade);
 }
 
+// Fora disso é quase certamente erro de digitação (ex.: ano 0202).
+const ANO_MIN = 1900;
+const ANO_MAX = 2100;
+
 // "AAAA-MM-DD" (ou o ISO que a API devolve) → meia-noite UTC, como as colunas @db.Date.
 export function dataDoDia(valor: unknown): Date | null {
   if (typeof valor !== "string") return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.000)?Z)?$/.exec(valor);
   if (!m) return null;
   const [ano, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (ano < ANO_MIN || ano > ANO_MAX) return null;
   const data = new Date(Date.UTC(ano, mes - 1, dia));
   return data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia
     ? data
@@ -48,4 +53,16 @@ export function primeiroDiaDoMes(mesAno: unknown): Date | null {
   const [ano, mes] = mesAno.split("-").map(Number) as [number, number];
   if (mes < 1 || mes > 12) return null;
   return new Date(Date.UTC(ano, mes - 1, 1));
+}
+
+// Dia de hoje em America/Sao_Paulo, como meia-noite UTC (o formato das datas
+// gravadas pelo app).
+export function hojeEmSaoPaulo(agora = new Date()): Date {
+  const iso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(agora);
+  return dataDoDia(iso)!;
 }

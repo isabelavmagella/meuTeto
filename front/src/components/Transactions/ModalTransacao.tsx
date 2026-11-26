@@ -5,7 +5,7 @@ import styles from "./ModalTransacao.module.css";
 import form from "../Modal/Formulario.module.css";
 import { Modal } from "../Modal/Modal";
 import { transacaoSchema, type TransacaoData } from "./transacaoSchema";
-import { moeda } from "../../pages/Dashboard/formatadores";
+import { MAX_DIGITOS_VALOR, moeda } from "../../pages/Dashboard/formatadores";
 import {
   salvarTransacao,
   type Categoria,
@@ -220,7 +220,9 @@ export function ModalTransacao({
                   value={field.value ? moeda.format(field.value) : ""}
                   onBlur={field.onBlur}
                   onChange={(e) => {
-                    const digitos = e.target.value.replace(/\D/g, "");
+                    const digitos = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, MAX_DIGITOS_VALOR);
                     field.onChange(digitos ? Number(digitos) / 100 : 0);
                   }}
                 />

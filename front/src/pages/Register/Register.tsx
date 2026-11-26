@@ -1,3 +1,4 @@
+import { API_URL } from "../../lib/api";
 import { Mail, User } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,7 +31,7 @@ export function Register() {
 
   const onSubmit = async (data: RegisterData) => {
     try {
-      const res = await fetch("http://localhost:3000/api/auth/register", {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

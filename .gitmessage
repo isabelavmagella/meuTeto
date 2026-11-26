@@ -1,0 +1,12 @@
+# tipo(escopo): resumo no imperativo, em minúsculas, sem ponto final
+#
+# Por que a mudança foi feita? O que estava errado ou faltando?
+# Quebre as linhas em ~72 caracteres. Linhas com # são ignoradas.
+#
+# Tipos:   feat (funcionalidade), fix (correção), refactor, test, docs,
+#          style (só formatação), chore (manutenção), build, ci, perf
+# Escopos: back, front (ou nenhum, se a mudança for do repositório todo)
+#
+# Exemplos:
+#   feat(front): adiciona filtro por forma de pagamento
+#   fix(back): não estoura orçamento quando o gasto é igual ao limite

@@ -1,13 +1,17 @@
 {
-  "name": "meu-teto",
-  "private": true,
+  "name": "meu-teto-web",
   "version": "0.0.0",
+  "private": true,
+  "description": "Front-end do Meu Teto: React + Vite",
+  "author": "Isabela Virginio Magella",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",
@@ -31,6 +35,7 @@
     "globals": "^17.12.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.69.0",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.5"
   }
 }

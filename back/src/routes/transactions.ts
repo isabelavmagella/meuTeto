@@ -1,9 +1,20 @@
 import { prisma } from "../lib/prisma.js";
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { Tipo } from "../generated/prisma/enums.js";
-import { inteiroPositivo, mesmoDia } from "../utils/validacao.js";
-import { dataNoMes, vencimentoPrimeiraParcela } from "../utils/datas.js";
+import {
+  MSG_VALOR_INVALIDO,
+  inteiroPositivo,
+  mesmoDia,
+  valorEmReais,
+} from "../utils/validacao.js";
+import {
+  dataDoDia,
+  dataNoMes,
+  primeiroDiaDoMes,
+  vencimentoPrimeiraParcela,
+} from "../utils/datas.js";
 import {
   MSG_SUBCATEGORIA_INVALIDA,
   MSG_SUBCATEGORIA_SEM_CATEGORIA,
@@ -14,10 +25,12 @@ const MSG_PARCELA_SEM_VENCIMENTO =
   "Compras parceladas exigem uma forma de pagamento com dia de vencimento.";
 const MSG_SUBCATEGORIA_REMOVIDA =
   "A subcategoria foi removida porque a categoria da transação mudou.";
+const BUSCA_MAX = 100;
+const DIA_MS = 24 * 60 * 60 * 1000;
 
 const router = Router();
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("transacoes"), async (req, res) => {
   const {
     tipo,
     valor,
@@ -51,9 +64,9 @@ router.post("/", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Tipo inválido" });
   }
 
-  const valorNumero = Number(valor);
-  if (!Number.isFinite(valorNumero) || valorNumero <= 0) {
-    return res.status(400).json({ error: "Valor inválido." });
+  const valorValido = valorEmReais(valor);
+  if (!valorValido) {
+    return res.status(400).json({ error: MSG_VALOR_INVALIDO });
   }
 
   let categoria: number | null = null;
@@ -87,8 +100,10 @@ router.post("/", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Informe a forma de pagamento." });
   }
 
-  const dataConvertida = new Date(data);
-  if (isNaN(dataConvertida.getTime())) {
+  // Só a data ("AAAA-MM-DD"), gravada como meia-noite UTC: um horário com
+  // fuso podia mudar o dia (e o mês) da compra.
+  const dataConvertida = dataDoDia(data);
+  if (!dataConvertida) {
     return res.status(400).json({ error: "Data inválida." });
   }
 
@@ -103,7 +118,7 @@ router.post("/", autenticar, async (req, res) => {
 
   const dadosBase = {
     tipo,
-    valor: String(valor),
+    valor: valorValido,
     descricao: descricao.trim(),
     data: dataConvertida,
     categoryId: categoria,
@@ -202,6 +217,9 @@ router.get("/", autenticar, async (req, res) => {
     categoria: categoryParam,
     subcategoria: subcategoryParam,
     por: porParam,
+    busca: buscaParam,
+    de: deParam,
+    ate: ateParam,
   } = req.query;
 
   const por = porParam ?? "compra";
@@ -216,15 +234,13 @@ router.get("/", autenticar, async (req, res) => {
   const filtro: any = { userId };
 
   if (mesParam) {
-    const mes = Number(String(mesParam).slice(5));
-    const ano = Number(String(mesParam).slice(0, 4));
-
-    const diasNoMes = new Date(ano, mes, 0).getDate();
-    const primeiroDia = new Date(Date.UTC(ano, mes - 1, 1));
-    const ultimoDia = new Date(
-      Date.UTC(ano, mes - 1, diasNoMes, 23, 59, 59, 999),
-    );
-    const intervalo = { gte: primeiroDia, lte: ultimoDia };
+    const primeiroDia = primeiroDiaDoMes(mesParam);
+    if (!primeiroDia) {
+      return res
+        .status(400)
+        .json({ error: "Mês inválido. Use o formato AAAA-MM." });
+    }
+    const intervalo = { gte: primeiroDia, lt: dataNoMes(primeiroDia, 1, 1) };
 
     if (por === "compra") {
       filtro.data = intervalo;
@@ -236,6 +252,46 @@ router.get("/", autenticar, async (req, res) => {
     }
   }
 
+  let busca = "";
+  if (buscaParam !== undefined) {
+    if (typeof buscaParam !== "string") {
+      return res.status(400).json({ error: "Busca inválida." });
+    }
+    busca = buscaParam.trim();
+    if (busca.length > BUSCA_MAX) {
+      return res
+        .status(400)
+        .json({ error: `A busca pode ter no máximo ${BUSCA_MAX} caracteres.` });
+    }
+  }
+
+  // Data da compra: "data" é gravada como meia-noite UTC do dia escolhido,
+  // então os limites também são meia-noite UTC; "até" inclui o dia inteiro.
+  const de = deParam ? dataDoDia(deParam) : null;
+  if (deParam && !de) {
+    return res.status(400).json({ error: "Data inicial inválida." });
+  }
+  const ate = ateParam ? dataDoDia(ateParam) : null;
+  if (ateParam && !ate) {
+    return res.status(400).json({ error: "Data final inválida." });
+  }
+  if (de && ate && de > ate) {
+    return res
+      .status(400)
+      .json({ error: "A data inicial não pode ser depois da final." });
+  }
+  if (de || ate) {
+    // Em AND para somar com o filtro de mês, que também pode usar "data".
+    filtro.AND = [
+      {
+        data: {
+          ...(de && { gte: de }),
+          ...(ate && { lt: new Date(ate.getTime() + DIA_MS) }),
+        },
+      },
+    ];
+  }
+
   if (tipoParam) {
     if (!Object.values(Tipo).includes(tipoParam as Tipo)) {
       return res.status(400).json({ error: "Tipo inválido." });
@@ -245,13 +301,16 @@ router.get("/", autenticar, async (req, res) => {
 
   try {
     if (categoryParam) {
-      const cat = await prisma.category.findUnique({
-        where: { id_userId: { id: Number(categoryParam), userId } },
-      });
+      const categoria = inteiroPositivo(categoryParam);
+      const cat = categoria
+        ? await prisma.category.findUnique({
+            where: { id_userId: { id: categoria, userId } },
+          })
+        : null;
       if (!cat) {
         return res.status(400).json({ error: "Categoria inválida." });
       }
-      filtro.categoryId = Number(categoryParam);
+      filtro.categoryId = cat.id;
     }
 
     if (subcategoryParam) {
@@ -265,6 +324,18 @@ router.get("/", autenticar, async (req, res) => {
         return res.status(400).json({ error: MSG_SUBCATEGORIA_INVALIDA });
       }
       filtro.subcategoryId = sub.id;
+    }
+
+    if (busca) {
+      // O Prisma não aplica unaccent no where: os ids saem de uma query
+      // própria, sempre do usuário, ignorando acentos e maiúsculas.
+      const padrao = `%${busca.replace(/[\\%_]/g, "\\$&")}%`;
+      const encontradas = await prisma.$queryRaw<{ id: number }[]>`
+        SELECT id FROM "Transaction"
+        WHERE "userId" = ${userId}
+          AND unaccent(descricao) ILIKE unaccent(${padrao})
+      `;
+      filtro.id = { in: encontradas.map((t) => t.id) };
     }
 
     const transacoes = await prisma.transaction.findMany({
@@ -321,7 +392,7 @@ router.delete("/:id", autenticar, async (req, res) => {
   }
 });
 
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const {
     tipo,
     valor,
@@ -359,9 +430,9 @@ router.put("/:id", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Tipo inválido" });
   }
 
-  const valorNumero = Number(valor);
-  if (!Number.isFinite(valorNumero) || valorNumero <= 0) {
-    return res.status(400).json({ error: "Valor inválido." });
+  const valorValido = valorEmReais(valor);
+  if (!valorValido) {
+    return res.status(400).json({ error: MSG_VALOR_INVALIDO });
   }
 
   let categoria: number | null = null;
@@ -398,8 +469,10 @@ router.put("/:id", autenticar, async (req, res) => {
     return res.status(400).json({ error: "Informe a forma de pagamento." });
   }
 
-  const dataConvertida = new Date(data);
-  if (isNaN(dataConvertida.getTime())) {
+  // Só a data ("AAAA-MM-DD"), gravada como meia-noite UTC: um horário com
+  // fuso podia mudar o dia (e o mês) da compra.
+  const dataConvertida = dataDoDia(data);
+  if (!dataConvertida) {
     return res.status(400).json({ error: "Data inválida." });
   }
 
@@ -481,7 +554,7 @@ router.put("/:id", autenticar, async (req, res) => {
 
     const dadosComuns = {
       tipo,
-      valor: String(valor),
+      valor: valorValido,
       descricao: descricao.trim(),
       data: dataConvertida,
       categoryId: categoria,

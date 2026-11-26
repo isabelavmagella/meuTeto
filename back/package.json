@@ -1,34 +1,45 @@
 {
-  "name": "back",
+  "name": "meu-teto-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "API do Meu Teto: Express 5 + Prisma 7 + PostgreSQL",
+  "author": "Isabela Virginio Magella",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/app.ts",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && node scripts/migrar-producao.mjs",
+    "test": "vitest run",
     "recorrentes:gerar": "tsx src/jobs/gerarRecorrentes.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
-    "prisma": "^7.10.0",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.2",
     "tsx": "^4.23.15",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.2"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "@vercel/functions": "^3.11.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "prisma": "^7.10.1"
   }
 }

@@ -43,3 +43,21 @@ export function validarDiasCartao(
 
   return { ok: true, diaValidade: validade, diaFechamento: fechamento };
 }
+
+// Maior valor que cabe em Decimal(12,2).
+export const VALOR_MAX = 9_999_999_999.99;
+export const MSG_VALOR_INVALIDO =
+  "Valor inválido. Use um número positivo com até 2 casas decimais.";
+
+// Valor em reais vindo da API → string com 2 casas para gravar no Decimal, ou
+// null se inválido. Recusa (em vez de arredondar em silêncio) mais de 2 casas,
+// e valores acima do que a coluna comporta (que virariam erro 500).
+export function valorEmReais(v: unknown): string | null {
+  if (typeof v !== "number" && typeof v !== "string") return null;
+  if (typeof v === "string" && !v.trim()) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0 || n > VALOR_MAX) return null;
+  // Com até 2 casas, arredondar para 2 casas devolve o mesmo número.
+  const texto = n.toFixed(2);
+  return Number(texto) === n ? texto : null;
+}

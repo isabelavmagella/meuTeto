@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -18,6 +19,11 @@ model User {
   email    String @unique
   password String
 
+  // Usuário temporário do modo demonstração (ver src/demo). Apagar o User
+  // apaga tudo dele em cascata.
+  isDemo        Boolean   @default(false)
+  demoExpiresAt DateTime?
+
   categories      Category[]
   subcategories   Subcategory[]
   formasPagamento FormaPagamento[]
@@ -25,6 +31,19 @@ model User {
   budgets         Budget[]
 
   transacoesRecorrentes TransacaoRecorrente[]
+
+  @@index([isDemo, demoExpiresAt])
+}
+
+// Uma linha por demo criado, para limitar criações por IP. Funciona com várias
+// instâncias serverless, ao contrário de um contador em memória. Guarda só o
+// HMAC do IP, nunca o IP em si.
+model DemoRateLimit {
+  id        Int      @id @default(autoincrement())
+  ipHash    String
+  createdAt DateTime @default(now())
+
+  @@index([ipHash, createdAt])
 }
 
 model Category {
@@ -43,7 +62,9 @@ model Category {
 
   transacoesRecorrentes TransacaoRecorrente[]
 
-  @@unique([cor, userId])
+  // Cor única só entre as categorias ativas: arquivar uma categoria libera a
+  // cor dela (o front só mostra como ocupadas as cores das ativas).
+  @@unique([cor, userId], where: { ativo: true })
   @@unique([userId, nomeNormalizado])
   @@unique([id, userId])
 }

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  front:
+    name: Front-end (lint, typecheck, testes, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # O build roda o typecheck (tsc -b) antes do vite build.
+      - run: npm run build
+
+  back:
+    name: Back-end (typecheck, testes de integração)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: meu-teto
+          POSTGRES_PASSWORD: meu-teto123
+          POSTGRES_DB: meu-teto
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meu-teto"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Os testes criam e migram o banco meu_teto_test neste servidor.
+      DATABASE_URL: postgresql://meu-teto:meu-teto123@localhost:5432/meu-teto
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: back/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit -p .
+      - run: npm test

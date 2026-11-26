@@ -1,0 +1,59 @@
+.carregando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: girar 800ms linear infinite;
+}
+
+@keyframes girar {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+.mensagem {
+  margin: 0;
+  max-width: 32ch;
+  text-align: center;
+  color: var(--text);
+}
+
+.botao {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botao:hover {
+  background: var(--brand-hover);
+}
+
+.botao:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

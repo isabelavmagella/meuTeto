@@ -1,15 +1,16 @@
 import { Router } from "express";
 import { autenticar } from "../middlewares/auth.js";
+import { limitarDemo } from "../middlewares/limitesDemo.js";
 import { prisma } from "../lib/prisma.js";
 import { erroPrisma } from "../utils/erros.js";
 import { inteiroPositivo, normalizarNome } from "../utils/validacao.js";
 
 const MSG_CATEGORIA_DUPLICADO =
-  "Já existe uma categoria com esse nome ou essa cor (pode estar arquivada).";
+  "Já existe uma categoria com esse nome (pode estar arquivada) ou com essa cor.";
 
 const router = Router();
 
-router.post("/", autenticar, async (req, res) => {
+router.post("/", autenticar, limitarDemo("categorias"), async (req, res) => {
   const { nome, cor } = req.body;
   const userId = req.user?.id;
 
@@ -124,7 +125,7 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
-router.put("/:id", autenticar, async (req, res) => {
+router.put("/:id", autenticar, limitarDemo(), async (req, res) => {
   const id = Number(req.params.id);
   const userId = req.user?.id;
   const { nome, cor } = req.body;

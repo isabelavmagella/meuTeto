@@ -1,29 +1,13 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import authRoutes from "./routes/auth.js";
-import paymentsRoutes from "./routes/payments.js";
-import transactionsRoutes from "./routes/transactions.js";
-import recurringTransactionsRoutes from "./routes/recurringTransactions.js";
-import categoriesRoutes from "./routes/categories.js";
-import subcategoriesRoutes from "./routes/subcategories.js";
-import budgetRoutes from "./routes/budget.js";
-import dashboardRoutes from "./routes/dashboard.js";
+// Só para rodar localmente (npm run dev). Na Vercel a entrada é src/app.ts,
+// que exporta o app sem listen. Este arquivo também exporta o app e não abre
+// porta na Vercel, então funciona qualquer que seja a entrada detectada.
+import app from "./app.js";
 
-const app = express();
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-app.use(express.json());
+if (!process.env.VERCEL) {
+  const PORT = Number(process.env.PORT) || 3000;
+  app.listen(PORT, () => {
+    console.log(`API rodando em http://localhost:${PORT}`);
+  });
+}
 
-app.use("/api/auth", authRoutes);
-app.use("/api/payments", paymentsRoutes);
-app.use("/api/categories", categoriesRoutes);
-app.use("/api/subcategories", subcategoriesRoutes);
-app.use("/api/transactions", transactionsRoutes);
-app.use("/api/recurring-transactions", recurringTransactionsRoutes);
-app.use("/api/budgets", budgetRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`API rodando em http://localhost:${PORT}`);
-});
+export default app;
