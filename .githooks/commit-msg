@@ -1,0 +1,29 @@
+#!/bin/sh
+# Valida a mensagem de commit no padrão Conventional Commits.
+# Ative uma vez por clone com: git config core.hooksPath .githooks
+
+arquivo="$1"
+primeira=$(grep -v '^#' "$arquivo" | sed -n '/./{p;q;}')
+
+# Merges e reverts gerados pelo próprio git passam direto.
+case "$primeira" in
+  Merge\ *|Revert\ *) exit 0 ;;
+esac
+
+padrao='^(feat|fix|refactor|test|docs|style|chore|build|ci|perf|revert)(\((back|front)\))?!?: .+'
+if ! printf '%s\n' "$primeira" | grep -Eq "$padrao"; then
+  echo "Mensagem fora do padrão: \"$primeira\"" >&2
+  echo "Use: tipo(escopo): resumo   ex.: fix(back): valida o valor das transações" >&2
+  echo "Tipos: feat fix refactor test docs style chore build ci perf revert | escopos: back front" >&2
+  exit 1
+fi
+
+if [ ${#primeira} -gt 100 ]; then
+  echo "O resumo tem ${#primeira} caracteres; use no máximo 100." >&2
+  exit 1
+fi
+
+if grep -qi '^Co-Authored-By: Claude' "$arquivo"; then
+  echo "Remova a linha \"Co-Authored-By: Claude\" da mensagem." >&2
+  exit 1
+fi
