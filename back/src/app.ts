@@ -5,7 +5,7 @@ import express, {
   type Response,
 } from "express";
 import cors from "cors";
-import helmet from "helmet";
+import helmetImportado from "helmet";
 import { config } from "./config.js";
 import { prisma } from "./lib/prisma.js";
 import authRoutes from "./routes/auth.js";
@@ -18,6 +18,19 @@ import categoriesRoutes from "./routes/categories.js";
 import subcategoriesRoutes from "./routes/subcategories.js";
 import budgetRoutes from "./routes/budget.js";
 import dashboardRoutes from "./routes/dashboard.js";
+
+// O helmet publica tipos diferentes para import (index.d.mts) e require
+// (index.d.cts). O type-check do build da Vercel (builder de Express) resolve
+// os pacotes sempre pela condição "require"; vindo de um arquivo ESM, o import
+// default do index.d.cts vira o module.exports inteiro, um objeto que não dá
+// para chamar (TS2349). No tsx, nos testes e no CI vale o index.d.mts, em que
+// o default já é a função. Em runtime o Node carrega o index.mjs, cujo default
+// é a função; só a versão CJS tem .default, que aponta para a mesma função.
+// Esta linha aceita as duas formas de tipo sem mudar o que roda.
+type DefaultDe<T> = T extends { default: infer D } ? D : T;
+const helmet = (
+  "default" in helmetImportado ? helmetImportado.default : helmetImportado
+) as DefaultDe<typeof helmetImportado>;
 
 // O app é exportado sem listen: na Vercel ele vira uma Function; localmente,
 // src/server.ts sobe a porta.
