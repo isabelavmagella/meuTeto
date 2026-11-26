@@ -18,6 +18,11 @@ model User {
   email    String @unique
   password String
 
+  // Usuário temporário do modo demonstração (ver src/demo). Apagar o User
+  // apaga tudo dele em cascata.
+  isDemo        Boolean   @default(false)
+  demoExpiresAt DateTime?
+
   categories      Category[]
   subcategories   Subcategory[]
   formasPagamento FormaPagamento[]
@@ -25,6 +30,19 @@ model User {
   budgets         Budget[]
 
   transacoesRecorrentes TransacaoRecorrente[]
+
+  @@index([isDemo, demoExpiresAt])
+}
+
+// Uma linha por demo criado, para limitar criações por IP. Funciona com várias
+// instâncias serverless, ao contrário de um contador em memória. Guarda só o
+// HMAC do IP, nunca o IP em si.
+model DemoRateLimit {
+  id        Int      @id @default(autoincrement())
+  ipHash    String
+  createdAt DateTime @default(now())
+
+  @@index([ipHash, createdAt])
 }
 
 model Category {
