@@ -28,3 +28,6 @@ pnpm-debug.log*
 .idea
 .DS_Store
 *.sw?
+
+# Lock de skills de ferramentas de IA (não faz parte do app)
+skills-lock.json
