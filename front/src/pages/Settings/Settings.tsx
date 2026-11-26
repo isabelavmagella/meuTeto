@@ -24,6 +24,8 @@ import {
   type Subcategoria,
   type TransacaoRecorrente,
 } from "./api";
+import { foiCancelado, mensagemDeFalha } from "../../lib/api";
+import { AvisoErro } from "../../components/Dashboard/Layout";
 
 function contar(n: number, singular: string, plural: string) {
   return `${n} ${n === 1 ? singular : plural}`;
@@ -140,6 +142,22 @@ export function Settings() {
   const [formaEmEdicao, setFormaEmEdicao] = useState<
     FormaPagamento | "nova" | null
   >(null);
+  const [erro, setErro] = useState("");
+
+  // Falha ao carregar: mostra o aviso e sai do "Carregando…" da seção.
+  function falhou(e: unknown, marcarCarregada: () => void) {
+    if (foiCancelado(e)) return;
+    setErro(mensagemDeFalha(e));
+    marcarCarregada();
+  }
+
+  function tentarNovamente() {
+    setErro("");
+    setVersaoCategorias((v) => v + 1);
+    setVersaoFormas((v) => v + 1);
+    setVersaoOrcamentos((v) => v + 1);
+    setVersaoRecorrencias((v) => v + 1);
+  }
 
   useEffect(() => {
     const controle = new AbortController();
@@ -152,7 +170,7 @@ export function Settings() {
         setSubcategorias(subs);
         setCategoriasCarregadas(versaoCategorias);
       })
-      .catch(() => {});
+      .catch((e) => falhou(e, () => setCategoriasCarregadas(versaoCategorias)));
     return () => controle.abort();
   }, [versaoCategorias]);
 
@@ -163,7 +181,7 @@ export function Settings() {
         setFormas(lista);
         setFormasCarregadas(versaoFormas);
       })
-      .catch(() => {});
+      .catch((e) => falhou(e, () => setFormasCarregadas(versaoFormas)));
     return () => controle.abort();
   }, [versaoFormas]);
 
@@ -180,7 +198,7 @@ export function Settings() {
         );
         setOrcamentosCarregados(versaoOrcamentos);
       })
-      .catch(() => {});
+      .catch((e) => falhou(e, () => setOrcamentosCarregados(versaoOrcamentos)));
     return () => controle.abort();
   }, [versaoOrcamentos, versaoCategorias]);
 
@@ -192,7 +210,9 @@ export function Settings() {
         setRecorrencias(lista.map((r) => ({ ...r, nome: r.descricao })));
         setRecorrenciasCarregadas(versaoRecorrencias);
       })
-      .catch(() => {});
+      .catch((e) =>
+        falhou(e, () => setRecorrenciasCarregadas(versaoRecorrencias)),
+      );
     return () => controle.abort();
   }, [versaoRecorrencias, versaoCategorias, versaoFormas]);
 
@@ -269,6 +289,10 @@ export function Settings() {
           e as transações recorrentes.
         </p>
       </div>
+
+      {erro && (
+        <AvisoErro mensagem={erro} onTentarNovamente={tentarNovamente} />
+      )}
 
       <div className={styles.grade}>
         <TabelaCategorias

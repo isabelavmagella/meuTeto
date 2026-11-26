@@ -29,3 +29,31 @@
     animation-duration: 2.4s;
   }
 }
+
+.mensagem {
+  margin: 0;
+  max-width: 32ch;
+  text-align: center;
+  color: var(--text);
+}
+
+.botao {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botao:hover {
+  background: var(--brand-hover);
+}
+
+.botao:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

@@ -5,16 +5,9 @@ import {
   type Mes,
   type ResumoMensal,
 } from "../pages/Dashboard/api";
+import { foiCancelado, mensagemDeFalha } from "../lib/api";
 
-function mensagemDeErro(e: unknown) {
-  if (e instanceof TypeError) return "Não foi possível conectar ao servidor.";
-  if (e instanceof Error) return e.message;
-  return "Erro ao carregar os dados.";
-}
-
-function foiCancelado(e: unknown) {
-  return e instanceof DOMException && e.name === "AbortError";
-}
+const mensagemDeErro = (e: unknown) => mensagemDeFalha(e);
 
 type Resultado<T> = {
   chave: string;

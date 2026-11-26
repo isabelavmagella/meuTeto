@@ -64,9 +64,29 @@ export async function mensagemDeErro(resposta: Response, padrao: string) {
   return json?.error ?? padrao;
 }
 
+export function foiCancelado(e: unknown) {
+  return e instanceof DOMException && e.name === "AbortError";
+}
+
+// Mensagem para mostrar ao usuário quando uma chamada falha.
+export function mensagemDeFalha(
+  e: unknown,
+  padrao = "Não foi possível carregar os dados.",
+) {
+  if (e instanceof TypeError) return "Não foi possível conectar ao servidor.";
+  if (e instanceof Error && e.message) return e.message;
+  return padrao;
+}
+
+// Lança erro se a API falhar: devolver lista vazia faria uma falha parecer
+// "nenhuma transação", o que num app financeiro parece perda de dados.
 export async function buscar<T>(caminho: string, signal: AbortSignal) {
   const resposta = await requisitar(caminho, { signal });
-  if (!resposta.ok) return [];
+  if (!resposta.ok) {
+    throw new Error(
+      await mensagemDeErro(resposta, "Não foi possível carregar os dados."),
+    );
+  }
   return (await resposta.json()) as T[];
 }
 

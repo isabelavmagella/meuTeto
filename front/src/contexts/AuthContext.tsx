@@ -6,6 +6,7 @@ import {
   EVENTO_DEMO_EXPIRADO,
   apagarToken,
   mensagemDeErro,
+  mensagemDeFalha,
   obterToken,
   requisitar,
   salvarToken,
@@ -17,30 +18,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(() => !!obterToken());
+  const [erroSessao, setErroSessao] = useState("");
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     if (!obterToken()) return;
 
     let cancelled = false;
 
-    // O /me também lança as recorrências do mês no back.
+    // O /me também lança as recorrências do mês no back. Só um 401 encerra a
+    // sessão: com falha de rede ou 500 (ex.: banco acordando), o token fica e
+    // a pessoa pode tentar de novo sem perder o demo.
     requisitar("/auth/me")
-      .then((r) => {
-        if (!r.ok) throw new Error();
-        return r.json();
+      .then(async (r) => {
+        if (r.status === 401) {
+          apagarToken();
+          return null;
+        }
+        if (!r.ok) {
+          throw new Error(
+            await mensagemDeErro(r, "Não foi possível carregar sua sessão."),
+          );
+        }
+        return (await r.json()) as User;
       })
-      .then((u) => !cancelled && setUser(u))
-      .catch(() => {
+      .then((u) => {
         if (cancelled) return;
-        apagarToken();
-        setUser(null);
+        setUser(u);
+        setErroSessao("");
+      })
+      .catch((e) => {
+        if (!cancelled) setErroSessao(mensagemDeFalha(e));
       })
       .finally(() => !cancelled && setLoading(false));
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tentativa]);
+
+  const tentarSessaoDeNovo = () => {
+    setErroSessao("");
+    setLoading(true);
+    setTentativa((t) => t + 1);
+  };
 
   const entrar = (body: RespostaLogin) => {
     salvarToken(body.token, body.user.isDemo);
@@ -106,6 +127,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         entrarDemo,
         recomecarDemo,
         expirarDemo,
+        erroSessao,
+        tentarSessaoDeNovo,
       }}
     >
       {children}

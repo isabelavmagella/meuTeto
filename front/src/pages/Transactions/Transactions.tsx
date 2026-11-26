@@ -25,6 +25,8 @@ import {
 import { TabelaTransacoes } from "../../components/Transactions/TabelaTransacoes";
 import { ModalTransacao } from "../../components/Transactions/ModalTransacao";
 import { IconeCalendario } from "../../components/Header/Icones";
+import { AvisoErro } from "../../components/Dashboard/Layout";
+import { foiCancelado, mensagemDeFalha } from "../../lib/api";
 
 const POR_PAGINA = 12;
 const ESPERA_BUSCA_MS = 300;
@@ -57,20 +59,31 @@ export function Transactions() {
   const [buscaAplicada, setBuscaAplicada] = useState("");
   const [pagina, setPagina] = useState(1);
   const [selecionadas, setSelecionadas] = useState<Set<number>>(new Set());
+  const [tentativa, setTentativa] = useState(0);
+  const [erroOpcoes, setErroOpcoes] = useState("");
+  const [erroLista, setErroLista] = useState<{
+    consulta: string;
+    mensagem: string;
+  } | null>(null);
 
   useEffect(() => {
     const controle = new AbortController();
-    buscar<Categoria>("/categories", controle.signal)
-      .then(setCategorias)
-      .catch(() => {});
-    buscar<Subcategoria>("/subcategories", controle.signal)
-      .then(setSubcategorias)
-      .catch(() => {});
-    buscar<FormaPagamento>("/payments", controle.signal)
-      .then(setPagamentos)
-      .catch(() => {});
+    Promise.all([
+      buscar<Categoria>("/categories", controle.signal),
+      buscar<Subcategoria>("/subcategories", controle.signal),
+      buscar<FormaPagamento>("/payments", controle.signal),
+    ])
+      .then(([cats, subs, formas]) => {
+        setCategorias(cats);
+        setSubcategorias(subs);
+        setPagamentos(formas);
+        setErroOpcoes("");
+      })
+      .catch((e) => {
+        if (!foiCancelado(e)) setErroOpcoes(mensagemDeFalha(e));
+      });
     return () => controle.abort();
-  }, []);
+  }, [tentativa]);
 
   // Espera parar de digitar antes de buscar na API.
   useEffect(() => {
@@ -99,6 +112,10 @@ export function Transactions() {
     versao,
   ].join("|");
   const carregando = consultaCarregada !== consulta;
+  // Erro só vale para a consulta atual: trocar de filtro tenta de novo.
+  const erroDaLista =
+    erroLista?.consulta === consulta ? erroLista.mensagem : "";
+  const erroAtual = erroDaLista || erroOpcoes;
 
   useEffect(() => {
     const controle = new AbortController();
@@ -113,9 +130,15 @@ export function Transactions() {
       .then((lista) => {
         setTransacoes(lista);
         setSelecionadas(new Set());
+        setErroLista(null);
         setConsultaCarregada(consulta);
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (foiCancelado(e)) return;
+        // Marca como carregada para sair do "Carregando…" e mostrar o erro.
+        setErroLista({ consulta, mensagem: mensagemDeFalha(e) });
+        setConsultaCarregada(consulta);
+      });
     return () => controle.abort();
   }, [
     periodoEfetivo,
@@ -367,20 +390,32 @@ export function Transactions() {
         </p>
       )}
 
-      <TabelaTransacoes
-        transacoes={transacoesDaPagina}
-        total={transacoesFiltradas.length}
-        inicio={inicio}
-        pagina={paginaAtual}
-        totalPaginas={totalPaginas}
-        onTrocarPagina={setPagina}
-        selecionadas={selecionadas}
-        onAlternar={alternar}
-        onAlternarTodas={alternarTodas}
-        onEditar={setEmEdicao}
-        onApagar={(t) => apagar([t])}
-        carregando={carregando}
-      />
+      {erroAtual && (
+        <AvisoErro
+          mensagem={erroAtual}
+          onTentarNovamente={() => {
+            setTentativa((t) => t + 1);
+            setVersao((v) => v + 1);
+          }}
+        />
+      )}
+
+      {!erroDaLista && (
+        <TabelaTransacoes
+          transacoes={transacoesDaPagina}
+          total={transacoesFiltradas.length}
+          inicio={inicio}
+          pagina={paginaAtual}
+          totalPaginas={totalPaginas}
+          onTrocarPagina={setPagina}
+          selecionadas={selecionadas}
+          onAlternar={alternar}
+          onAlternarTodas={alternarTodas}
+          onEditar={setEmEdicao}
+          onApagar={(t) => apagar([t])}
+          carregando={carregando}
+        />
+      )}
 
       {filtrosAbertos && (
         <SheetFiltros
