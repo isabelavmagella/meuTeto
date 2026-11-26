@@ -1,3 +1,5 @@
+import { requisitar } from "../../lib/api";
+
 export type Mes = {
   numeroMes: number;
   nomeMes: string;
@@ -49,18 +51,7 @@ export type HistoricoAnual = {
   historico: Mes[];
 };
 
-const API_URL = (
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3333"
-).replace(/\/$/, "");
-
 const PREFIXO = "/dashboard";
-
-const USAR_COOKIES = false;
-
-function obterToken() {
-  return localStorage.getItem("token");
-}
 
 export class ErroApi extends Error {
   status: number;
@@ -78,15 +69,8 @@ async function get<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   const query = new URLSearchParams(params).toString();
-  const token = obterToken();
-
-  const resposta = await fetch(`${API_URL}${PREFIXO}${caminho}?${query}`, {
+  const resposta = await requisitar(`${PREFIXO}${caminho}?${query}`, {
     signal,
-    credentials: USAR_COOKIES ? "include" : "same-origin",
-    headers: {
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   if (!resposta.ok) {

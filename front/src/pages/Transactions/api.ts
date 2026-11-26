@@ -1,4 +1,4 @@
-import { API_URL, buscar, cabecalhos, enviar } from "../../lib/api";
+import { buscar, enviar, requisitar } from "../../lib/api";
 
 export type Opcao = { id: number; nome: string };
 
@@ -40,9 +40,8 @@ export type Transacao = {
 export { buscar };
 
 export async function apagarTransacao(id: number) {
-  const resposta = await fetch(`${API_URL}/transactions/${id}`, {
+  const resposta = await requisitar(`/transactions/${id}`, {
     method: "DELETE",
-    headers: cabecalhos(),
   });
   if (!resposta.ok && resposta.status !== 404) {
     throw new Error("Erro ao apagar a transação.");

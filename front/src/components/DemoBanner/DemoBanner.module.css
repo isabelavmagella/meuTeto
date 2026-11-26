@@ -1,0 +1,55 @@
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  padding: 8px 16px;
+  background: var(--attention-soft);
+  color: var(--on-attention-soft);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.texto,
+.erro {
+  margin: 0;
+}
+
+.restante {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.erro {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.botao {
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.botao:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.botao:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.botao:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

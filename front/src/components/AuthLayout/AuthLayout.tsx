@@ -7,9 +7,10 @@ type AuthLayoutProps = {
   titleId: string;
   title: string;
   lead: string;
-  switchText: string;
-  switchLabel: string;
-  switchTo: string;
+  // Link para a outra tela (entrar/criar conta). Opcional.
+  switchText?: string;
+  switchLabel?: string;
+  switchTo?: string;
   children: ReactNode;
 };
 
@@ -61,12 +62,14 @@ export function AuthLayout({
 
           {children}
 
-          <p className={styles.switch}>
-            {switchText}
-            <Link to={switchTo} className={styles.link}>
-              {switchLabel}
-            </Link>
-          </p>
+          {switchTo && (
+            <p className={styles.switch}>
+              {switchText}
+              <Link to={switchTo} className={styles.link}>
+                {switchLabel}
+              </Link>
+            </p>
+          )}
         </section>
       </main>
     </div>

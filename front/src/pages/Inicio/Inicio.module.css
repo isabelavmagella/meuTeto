@@ -1,0 +1,47 @@
+.aviso {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius-field);
+  background: var(--attention-soft);
+  color: var(--on-attention-soft);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.recursos {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+}
+
+.recursos li {
+  position: relative;
+  padding-left: 26px;
+}
+
+.recursos li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0.45em;
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid var(--success);
+  border-bottom: 2px solid var(--success);
+  rotate: -45deg;
+}
+
+.nota {
+  margin: 16px 0 0;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.nota a {
+  color: var(--brand);
+  font-weight: 600;
+}
